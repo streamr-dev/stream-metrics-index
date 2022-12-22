@@ -1,4 +1,5 @@
 import { Logger } from '@streamr/utils'
+import { difference } from 'lodash'
 import fetch from 'node-fetch'
 import { Stream, StreamID, StreamPermission } from 'streamr-client'
 import { Inject, Service } from 'typedi'
@@ -52,7 +53,6 @@ export class Crawler {
     }
 
     private async getPeerCount(streamId: string): Promise<number> {
-        let peerCount = 0
         const trackerUrls = this.config.trackers.map((t) => t.http)
         for (const trackerUrl of trackerUrls) {
             const response = await fetch(`${trackerUrl}/topology/${encodeURIComponent(streamId)}`)
@@ -63,18 +63,16 @@ export class Crawler {
                     throw new Error('assertion failed')
                 }
                 const peerIds = Object.keys(json[topologyStreamIds[0]]) 
-                peerCount += peerIds.length
+                return peerIds.length
             }
         }
-        return peerCount
+        return 0
     }
 
     private async cleanupDeletedStreams(contractStreams: Stream[]): Promise<void> {
         const contractStreamIds = contractStreams.map((s) => s.id)
         const databaseStreamIds = await this.database.getIds()
-        const removedStreamsIds = databaseStreamIds.filter((id: string) => {
-            return !contractStreamIds.includes(id as StreamID)
-        })
+        const removedStreamsIds = difference(databaseStreamIds, contractStreamIds)
         for (const streamId of removedStreamsIds) {
             logger.info('Delete: %s', streamId)
             await this.database.deleteStream(streamId)
