@@ -1,9 +1,9 @@
 import { Arg, Int, Query, Resolver } from 'type-graphql'
 import { Inject, Service } from 'typedi'
-import { OrderBy, Stream, Streams, Summary } from '../entities'
+import { OrderBy, Streams, Summary } from '../entities'
 import { StreamRepository } from '../StreamRepository'
 
-@Resolver(() => Stream)
+@Resolver()
 @Service()
 export class StreamResolver {
     constructor(
