@@ -5,6 +5,7 @@ import { count } from './utils'
 
 @Service() 
 export class StreamrClientFacade {
+
     private readonly client: StreamrClient
 
     constructor(

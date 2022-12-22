@@ -17,7 +17,7 @@ const ENDPOINT = '/api'
 export class APIServer {
 
     private httpServer?: Server
-    private config: Config
+    private readonly config: Config
 
     constructor(
         @Inject(CONFIG_TOKEN) config: Config

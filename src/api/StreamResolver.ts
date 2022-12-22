@@ -6,10 +6,15 @@ import { StreamRepository } from '../StreamRepository'
 @Resolver()
 @Service()
 export class StreamResolver {
+
+    private repository: StreamRepository
+
     constructor(
         @Inject()
-        private repository: StreamRepository
-    ) {}
+        repository: StreamRepository
+    ) {
+        this.repository = repository
+    }
 
     @Query(() => Streams)
     async streams(
