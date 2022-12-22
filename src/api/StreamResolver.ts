@@ -10,8 +10,7 @@ export class StreamResolver {
     private repository: StreamRepository
 
     constructor(
-        @Inject()
-        repository: StreamRepository
+        @Inject() repository: StreamRepository
     ) {
         this.repository = repository
     }

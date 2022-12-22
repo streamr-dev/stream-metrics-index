@@ -1,7 +1,7 @@
 import { Logger } from '@streamr/utils'
 import { difference } from 'lodash'
 import fetch from 'node-fetch'
-import { Stream, StreamID, StreamPermission } from 'streamr-client'
+import { Stream, StreamPermission } from 'streamr-client'
 import { Inject, Service } from 'typedi'
 import { Config, CONFIG_TOKEN } from '../Config'
 import { StreamrClientFacade } from '../StreamrClientFacade'
