@@ -37,7 +37,7 @@ export class Streams {
 
 @ObjectType()
 export class Summary {
-    @Field(() => Float)
+    @Field(() => Int)
     streamCount!: number
     @Field(() => Float)
     messagesPerSecond!: number
