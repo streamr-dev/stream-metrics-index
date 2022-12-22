@@ -11,7 +11,7 @@ import { StreamResolver } from './StreamResolver'
 
 const logger = new Logger(module)
 
-const ENDPOINT = '/api/v1'
+const ENDPOINT = '/api'
 
 @Service()
 export class APIServer {

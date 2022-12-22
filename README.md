@@ -21,7 +21,7 @@ Start both applications:
 ./dist/bin/crawler.js CONFIG-FILE
 ```
 
-The GraphQL endpoint is available at http://localhost:PORT/api/v1
+The GraphQL endpoint is available at http://localhost:PORT/api
 
 
 ## Test

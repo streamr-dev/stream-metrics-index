@@ -32,7 +32,7 @@ export const createTestDatabase = async (): Promise<void> => {
 
 export const queryAPI = async (query: string): Promise<any> => {
     const server = Container.get(APIServer)
-    const response = await fetch(`http://localhost:${server.getPort()}/api/v1`, {
+    const response = await fetch(`http://localhost:${server.getPort()}/api`, {
         body: JSON.stringify({ query }),
         method: 'POST',
         headers: {
