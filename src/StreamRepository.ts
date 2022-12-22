@@ -88,9 +88,9 @@ export class StreamRepository {
             case OrderBy.MESSAGES_PER_SECOND:
                 return 'messagesPerSecond DESC'
             case OrderBy.PUBLISHER_COUNT:
-                return 'publisherCount IS NOT NULL, publisherCount DESC'
+                return 'publisherCount IS NULL DESC, publisherCount DESC'
             case OrderBy.SUBSCRIBER_COUNT:
-                return 'subscriberCount IS NOT NULL, subscriberCount DESC'
+                return 'subscriberCount IS NULL DESC, subscriberCount DESC'
             default:
                 throw new Error('assertion failed')
         }
