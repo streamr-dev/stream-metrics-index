@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "@tsconfig/node18/tsconfig.json",
+  "compilerOptions": {
+      "composite": true,
+      "declaration": true,
+      "moduleResolution": "node",
+      "noImplicitOverride": true,
+      "resolveJsonModule": true,
+      "incremental": true,
+      "stripInternal": true,
+      "strictBindCallApply": true,
+      "emitDecoratorMetadata": true,
+      "experimentalDecorators": true
+  },
+  "include": [
+    "src/**/*",
+    "test/**/*"
+  ]
+}
