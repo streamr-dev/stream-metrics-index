@@ -42,7 +42,7 @@ export class MessageRateAnalyzer {
         for (const streamPartId of stream.getStreamParts()) {
             this.node.unsubscribe(streamPartId)
         }
-        return messageCount / this.config.crawler.subscribeDuration * 1000
+        return messageCount / (this.config.crawler.subscribeDuration / 1000)
     }
 
     destroy(): void {
