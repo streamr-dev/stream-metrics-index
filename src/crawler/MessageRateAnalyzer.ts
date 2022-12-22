@@ -33,15 +33,17 @@ export class MessageRateAnalyzer {
             this.node.subscribe(streamPartId)
         }
         let messageCount = 0
-        this.node.addMessageListener((msg: StreamMessage) => {
+        const messageListener = (msg: StreamMessage) => {
             if (msg.getStreamId() === stream.id) {
                 messageCount++
             }
-        })
+        }
+        this.node.addMessageListener(messageListener)
         await wait(this.config.crawler.subscribeDuration)
         for (const streamPartId of stream.getStreamParts()) {
             this.node.unsubscribe(streamPartId)
         }
+        this.node.removeMessageListener(messageListener)
         return messageCount / (this.config.crawler.subscribeDuration / 1000)
     }
 
