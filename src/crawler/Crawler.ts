@@ -57,13 +57,13 @@ export class Crawler {
         for (const trackerUrl of trackerUrls) {
             const response = await fetch(`${trackerUrl}/topology/${encodeURIComponent(streamId)}`)
             const json = await response.json()
-            const topologyStreamIds = Object.keys(json)
-            if (topologyStreamIds.length > 0) {
-                if (topologyStreamIds.length !== 1) {
-                    throw new Error('assertion failed')
-                }
-                const peerIds = Object.keys(json[topologyStreamIds[0]]) 
-                return peerIds.length
+            const streamParts = Object.keys(json)
+            if (streamParts.length > 0) {
+                let peerCount = 0
+                streamParts.forEach((streamPartId: string) => {
+                    peerCount += Object.keys(json[streamPartId]).length
+                })
+                return peerCount
             }
         }
         return 0
