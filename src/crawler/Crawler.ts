@@ -78,8 +78,4 @@ export class Crawler {
             await this.database.deleteStream(streamId)
         }
     }
-
-    async destroy(): Promise<void> {
-        await this.client.destroy()
-    }
 }
