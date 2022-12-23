@@ -1,12 +1,12 @@
 import { readFile } from 'fs/promises'
-import { createConnection } from 'mysql2/promise'
+import { Connection, createConnection } from 'mysql2/promise'
 import fetch from 'node-fetch'
 import Container from 'typedi'
 import { APIServer } from '../src/api/APIServer'
 
 export const TEST_DATABASE_NAME = 'stream_metrics_index_test'
 
-const createDatabaseConnection = async (databaseName: string | undefined) => {
+export const createDatabaseConnection = async (databaseName: string | undefined): Promise<Connection> => {
     return await createConnection({
         host: '10.200.10.1',
         user: 'root',
