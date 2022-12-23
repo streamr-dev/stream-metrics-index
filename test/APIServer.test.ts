@@ -27,7 +27,7 @@ describe('APIServer', () => {
         await server.start()
     })
 
-    afterEach(async () => {
+    afterEach(() => {
         Container.reset()
     })
 
