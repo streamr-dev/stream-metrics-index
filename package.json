@@ -2,10 +2,6 @@
   "name": "stream-metrics-index",
   "version": "1.0.0",
   "private": true,
-  "bin": {
-    "api": "dist/bin/api.js",
-    "crawler": "dist/bin/crawler.js"
-  },
   "scripts": {
     "build": "tsc -b tsconfig.build.json",
     "test": "jest --runInBand",
