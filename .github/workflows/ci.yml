@@ -27,6 +27,7 @@ jobs:
           services-to-start: mysql graph-deploy-streamregistry-subgraph trackers
       - run: npm run test
   docker:
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - name: Set up QEMU
