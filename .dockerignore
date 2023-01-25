@@ -1,0 +1,10 @@
+node_modules
+dist
+test
+.eslint*
+jest.config.js
+README.md
+.git*
+.DS_Store
+Dockerfile
+.dockerignore
