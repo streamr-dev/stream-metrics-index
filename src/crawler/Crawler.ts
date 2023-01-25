@@ -50,6 +50,7 @@ export class Crawler {
             })
         }
         await this.cleanupDeletedStreams(contractStreams)
+        logger.info(`Index updated`)
     }
 
     private async getPeerCount(streamId: string): Promise<number> {
