@@ -8,7 +8,8 @@ import { CONFIG_TOKEN } from '../src/Config'
 import { Crawler } from '../src/crawler/Crawler'
 import { MessageRateAnalyzer } from '../src/crawler/MessageRateAnalyzer'
 import { StreamrClientFacade } from '../src/StreamrClientFacade'
-import { createDatabaseConnection, createTestDatabase, TEST_DATABASE_NAME } from './utils'
+import { createDatabase, createDatabaseConnection } from '../src/utils'
+import { dropTestDatabaseIfExists, TEST_DATABASE_NAME } from './utils'
 
 const startFakeTracker = async (): Promise<{ port: number, destroy: () => Promise<void> }> => {
     const app = express()
@@ -33,11 +34,11 @@ describe('Crawler', () => {
 
     let crawler: Crawler
     let tracker: { port: number, destroy: () => Promise<void> }
+    let config: any
 
     beforeEach(async () => {
-        await createTestDatabase()
         tracker = await startFakeTracker()
-        Container.set(CONFIG_TOKEN, {
+        config = {
             crawler: {
                 subscribeDuration: 10
             },
@@ -54,7 +55,10 @@ describe('Crawler', () => {
             trackers: [{
                 http: `http://localhost:${tracker.port}`
             }]
-        })
+        }
+        await dropTestDatabaseIfExists(config.database)
+        await createDatabase(config.database)
+        Container.set(CONFIG_TOKEN, config)
         Container.set(StreamrClientFacade, {
             getAllStreams: () => [{ id: 'stream-id' }],
             getPublisherOrSubscriberCount: (_streamId: string, permission: StreamPermission.PUBLISH | StreamPermission.SUBSCRIBE) => {
@@ -78,7 +82,7 @@ describe('Crawler', () => {
     
     it('happy path', async () => {
         await crawler.updateStreams()
-        const connection = await createDatabaseConnection(TEST_DATABASE_NAME)
+        const connection = await createDatabaseConnection(config.database)
         const streams = await connection.query('select * from streams')
         expect(streams[0]).toMatchObject([{
             id: 'stream-id',

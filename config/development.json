@@ -9,7 +9,7 @@
     },
     "database": {
         "host": "10.200.10.1",
-        "name": "stream_metrics_index",
+        "name": "stream_metrics_index_dev",
         "user": "root",
         "password": "password"
     },

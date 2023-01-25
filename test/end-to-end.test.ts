@@ -7,8 +7,8 @@ import { APIServer } from '../src/api/APIServer'
 import { CONFIG_TOKEN } from '../src/Config'
 import { Crawler } from '../src/crawler/Crawler'
 import { Stream } from '../src/entities'
-import { collect } from '../src/utils'
-import { createTestDatabase, queryAPI, TEST_DATABASE_NAME } from './utils'
+import { collect, createDatabase } from '../src/utils'
+import { dropTestDatabaseIfExists, queryAPI, TEST_DATABASE_NAME } from './utils'
 
 const PUBLISHER_PRIVATE_KEY = '0x0000000000000000000000000000000000000000000000000000000000000001'
 const SUBSCRIBER_PRIVATE_KEY = '0x0000000000000000000000000000000000000000000000000000000000000002'
@@ -51,8 +51,7 @@ describe('end-to-end', () => {
     let crawler: Crawler
 
     beforeAll(async () => {
-        await createTestDatabase()
-        Container.set(CONFIG_TOKEN, {
+        const config = {
             api: {
                 graphiql: false
             },
@@ -71,7 +70,10 @@ describe('end-to-end', () => {
             },
             trackers: CONFIG_TEST.network!.trackers! as TrackerRegistryRecord[],
             contracts: CONFIG_TEST.contracts
-        })
+        }
+        await dropTestDatabaseIfExists(config.database)
+        await createDatabase(config.database)
+        Container.set(CONFIG_TOKEN, config)
         publisher = createClient(PUBLISHER_PRIVATE_KEY)
         subscriber = createClient(SUBSCRIBER_PRIVATE_KEY)
         const stream = await publisher.getOrCreateStream({ id: `/test/stream-metrics-index` })

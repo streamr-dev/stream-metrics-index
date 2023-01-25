@@ -1,15 +1,12 @@
-CREATE TABLE streams (
+CREATE TABLE IF NOT EXISTS streams (
     id VARCHAR(500) NOT NULL PRIMARY KEY,
     peerCount INTEGER NOT NULL,
     messagesPerSecond DECIMAL(8,2) NOT NULL,
     publisherCount INTEGER,  -- NULL if stream has public publish permission
-    subscriberCount INTEGER  -- NULL if stream has public subscribe permission
+    subscriberCount INTEGER,  -- NULL if stream has public subscribe permission
+    INDEX streams_peerCount (peerCount),
+    INDEX streams_messagesPerSecond (messagesPerSecond),
+    INDEX streams_publisherCount (publisherCount),
+    INDEX streams_subscriberCount (subscriberCount)
 );
 
-CREATE INDEX streams_peerCount on streams (peerCount);
-
-CREATE INDEX streams_messagesPerSecond on streams (messagesPerSecond);
-
-CREATE INDEX streams_publisherCount on streams (publisherCount);
-
-CREATE INDEX streams_subscriberCount on streams (subscriberCount);

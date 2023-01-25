@@ -1,33 +1,16 @@
-import { readFile } from 'fs/promises'
-import { Connection, createConnection } from 'mysql2/promise'
+import { omit } from 'lodash'
 import fetch from 'node-fetch'
 import Container from 'typedi'
 import { APIServer } from '../src/api/APIServer'
+import { Config } from '../src/Config'
+import { createDatabaseConnection } from '../src/utils'
 
 export const TEST_DATABASE_NAME = 'stream_metrics_index_test'
 
-export const createDatabaseConnection = async (databaseName: string | undefined): Promise<Connection> => {
-    return await createConnection({
-        host: '10.200.10.1',
-        user: 'root',
-        password: 'password',
-        database: databaseName
-    })
-}
-
-export const createTestDatabase = async (): Promise<void> => {
-    const connection1 = await createDatabaseConnection(undefined)
-    await connection1.execute(`DROP DATABASE IF EXISTS ${TEST_DATABASE_NAME}`)
-    await connection1.execute(`CREATE DATABASE ${TEST_DATABASE_NAME}`)
-    connection1.destroy()
-    const connection2 = await createDatabaseConnection(TEST_DATABASE_NAME)
-    const statements = await readFile('./initialize-database.sql', { encoding: 'utf-8' })
-    for (const statement of statements.split(';')) {
-        if (statement.trim() !== '') {
-            await connection2.query(statement)
-        }
-    }
-    connection2.destroy()
+export const dropTestDatabaseIfExists = async (config: Config['database']): Promise<void> => {
+    const connection = await createDatabaseConnection(omit(config, 'name'))
+    await connection.execute(`DROP DATABASE IF EXISTS ${config.name}`)
+    connection.destroy()
 }
 
 export const queryAPI = async (query: string): Promise<any> => {

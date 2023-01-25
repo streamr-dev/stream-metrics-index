@@ -6,13 +6,13 @@ import { APIServer } from '../src/api/APIServer'
 import { CONFIG_TOKEN } from '../src/Config'
 import { StreamrClientFacade } from '../src/StreamrClientFacade'
 import { StreamRepository } from '../src/StreamRepository'
-import { createTestDatabase, queryAPI, TEST_DATABASE_NAME } from './utils'
+import { createDatabase } from '../src/utils'
+import { dropTestDatabaseIfExists, queryAPI, TEST_DATABASE_NAME } from './utils'
 
 describe('APIServer', () => {
 
     beforeEach(async () => {
-        await createTestDatabase()
-        Container.set(CONFIG_TOKEN, {
+        const config = {
             api: {
                 graphiql: false
             },
@@ -22,7 +22,10 @@ describe('APIServer', () => {
                 user: 'root',
                 password: 'password'
             }
-        })
+        }
+        await dropTestDatabaseIfExists(config.database)
+        await createDatabase(config.database)
+        Container.set(CONFIG_TOKEN, config)
         const server = Container.get(APIServer)
         await server.start()
     })
