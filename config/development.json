@@ -4,7 +4,8 @@
         "graphiql": true
     },
     "crawler": {
-        "subscribeDuration": 10000
+        "subscribeDuration": 10000,
+        "iterationDelay": 3600000
     },
     "database": {
         "host": "10.200.10.1",

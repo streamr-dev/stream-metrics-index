@@ -12,6 +12,7 @@ export interface Config {
     }
     crawler: {
         subscribeDuration: number
+        iterationDelay: number
     }
     database: {
         host: string
