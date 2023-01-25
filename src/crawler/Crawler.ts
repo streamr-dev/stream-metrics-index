@@ -6,7 +6,7 @@ import { Inject, Service } from 'typedi'
 import { Config, CONFIG_TOKEN } from '../Config'
 import { StreamrClientFacade } from '../StreamrClientFacade'
 import { StreamRepository } from '../StreamRepository'
-import { collect } from '../utils'
+import { collect, retry } from '../utils'
 import { MessageRateAnalyzer } from './MessageRateAnalyzer'
 
 const logger = new Logger(module)
@@ -32,7 +32,10 @@ export class Crawler {
     }
 
     async updateStreams(): Promise<void> {
-        const contractStreams = await collect(this.client.getAllStreams())
+        // wrap this.client.getAllStreams() with retry because in streamr-docker-dev environment
+        // the graph-node dependency may not be available immediately after the service has
+        // been started
+        const contractStreams = await retry(() => collect(this.client.getAllStreams()), 'Query streams')
         logger.info(`Contract streams: ${contractStreams.length}`)
         for (const stream of contractStreams) {
             logger.info(`Analyze: ${stream.id}`)
