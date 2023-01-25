@@ -1,6 +1,6 @@
 {
     "api": {
-        "port": 8080,
+        "port": 4001,
         "graphiql": true
     },
     "crawler": {
