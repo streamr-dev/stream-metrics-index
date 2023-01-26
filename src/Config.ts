@@ -7,7 +7,7 @@ export const CONFIG_TOKEN = new Token<Config>()
 
 export interface Config {
     api: {
-        port?: number
+        port: number
         graphiql: boolean
     }
     crawler: {

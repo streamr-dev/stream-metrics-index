@@ -6,14 +6,17 @@ import { APIServer } from '../src/api/APIServer'
 import { CONFIG_TOKEN } from '../src/Config'
 import { StreamrClientFacade } from '../src/StreamrClientFacade'
 import { StreamRepository } from '../src/StreamRepository'
-import { createDatabase } from '../src/utils'
-import { dropTestDatabaseIfExists, queryAPI, TEST_DATABASE_NAME } from './utils'
+import { createDatabase, queryAPI } from '../src/utils'
+import { dropTestDatabaseIfExists, TEST_DATABASE_NAME } from './utils'
 
 describe('APIServer', () => {
+
+    let apiPort: number
 
     beforeEach(async () => {
         const config = {
             api: {
+                port: 0,
                 graphiql: false
             },
             database: {
@@ -28,6 +31,7 @@ describe('APIServer', () => {
         Container.set(CONFIG_TOKEN, config)
         const server = Container.get(APIServer)
         await server.start()
+        apiPort = Container.get(APIServer).getPort()
     })
 
     afterEach(() => {
@@ -55,7 +59,7 @@ describe('APIServer', () => {
                         subscriberCount
                     }
                 }
-            }`)
+            }`, apiPort)
             expect(streams.items).toEqual([stream])
         })
 
@@ -79,7 +83,7 @@ describe('APIServer', () => {
                         }
                         cursor
                     }
-                }`)
+                }`, apiPort)
             }
             const page1 = await queryPage()
             expect(page1.items.map((item: any) => item.id)).toEqual(['id-0', 'id-1', 'id-2'])
@@ -118,7 +122,7 @@ describe('APIServer', () => {
                             id
                         }
                     }
-                }`)
+                }`, apiPort)
                 return streams.items.map((item: any) => item.id)
             }
             expect(await queryOrderedStreams('ID')).toEqual(['id-1', 'id-2', 'id-3'])
@@ -151,7 +155,7 @@ describe('APIServer', () => {
                     id
                 }
             }
-        }`)
+        }`, apiPort)
         expect(streams.items.map((item: any) => item.id)).toEqual(['loremipsum'])
     })
 
@@ -189,7 +193,7 @@ describe('APIServer', () => {
                     subscriberCount
                 }
             }
-        }`)
+        }`, apiPort)
         expect(searchStreams).toBeCalledWith(owner)
         expect(streams.items).toEqual([stream])
     })
@@ -215,7 +219,7 @@ describe('APIServer', () => {
                 streamCount
                 messagesPerSecond
             }
-        }`)
+        }`, apiPort)
         expect(summary).toEqual({
             streamCount: 2,
             messagesPerSecond: 300

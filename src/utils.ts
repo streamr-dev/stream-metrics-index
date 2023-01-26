@@ -2,6 +2,9 @@ import { Logger, wait } from '@streamr/utils'
 import { readFile } from 'fs/promises'
 import { omit } from 'lodash'
 import { Connection, createConnection } from 'mysql2/promise'
+import fetch from 'node-fetch'
+import Container from 'typedi'
+import { APIServer } from '../src/api/APIServer'
 import { Config } from './Config'
 
 const logger = new Logger(module)
@@ -62,4 +65,22 @@ export const retry = async <T>(task: () => Promise<T>, description: string, coun
         await wait(delay)
     }
     throw new Error(`${description} failed after ${count} attempts`)
+}
+
+export const queryAPI = async (query: string, port: number): Promise<any> => {
+    const response = await fetch(`http://localhost:${port}/api`, {
+        body: JSON.stringify({ query }),
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    const body = await response.json()
+    const root = body['data']
+    if (root !== undefined) {
+        const rootKeys = Object.keys(root)
+        return root[rootKeys[0]]
+    } else {
+        throw new Error(`Query error: ${body.errors.map((e: any) => e.message)}`)
+    }
 }

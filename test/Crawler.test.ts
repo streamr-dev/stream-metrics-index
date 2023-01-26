@@ -1,3 +1,5 @@
+import 'reflect-metadata'
+
 import { TEST_CONFIG } from '@streamr/network-node'
 import { once } from 'events'
 import express, { Request, Response } from 'express'

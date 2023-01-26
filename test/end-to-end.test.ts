@@ -1,14 +1,14 @@
-import { TEST_CONFIG } from '@streamr/network-node'
 import 'reflect-metadata'
 
+import { TEST_CONFIG } from '@streamr/network-node'
 import StreamrClient, { CONFIG_TEST, StreamPermission, TrackerRegistryRecord } from 'streamr-client'
 import Container from 'typedi'
 import { APIServer } from '../src/api/APIServer'
 import { CONFIG_TOKEN } from '../src/Config'
 import { Crawler } from '../src/crawler/Crawler'
 import { Stream } from '../src/entities'
-import { collect, createDatabase } from '../src/utils'
-import { dropTestDatabaseIfExists, queryAPI, TEST_DATABASE_NAME } from './utils'
+import { collect, createDatabase, queryAPI } from '../src/utils'
+import { dropTestDatabaseIfExists, TEST_DATABASE_NAME } from './utils'
 
 const PUBLISHER_PRIVATE_KEY = '0x0000000000000000000000000000000000000000000000000000000000000001'
 const SUBSCRIBER_PRIVATE_KEY = '0x0000000000000000000000000000000000000000000000000000000000000002'
@@ -22,7 +22,7 @@ const createClient = (privateKey: string) => {
     })
 }
 
-const getStream = async (id: string): Promise<Stream | undefined> => {
+const getStream = async (id: string, apiPort: number): Promise<Stream | undefined> => {
     const query = `{
         streams(searchTerm: "${id}" pageSize: 1) {
             items {
@@ -34,7 +34,7 @@ const getStream = async (id: string): Promise<Stream | undefined> => {
             }
         }
     }`
-    const response = await queryAPI(query)
+    const response = await queryAPI(query, apiPort)
     const streams = response['items']
     if (streams.length > 0) {
         return streams[0]
@@ -49,10 +49,12 @@ describe('end-to-end', () => {
     let subscriber: StreamrClient
     let streamId: string
     let crawler: Crawler
+    let apiPort: number
 
     beforeAll(async () => {
         const config = {
             api: {
+                port: 0,
                 graphiql: false
             },
             crawler: {
@@ -84,6 +86,7 @@ describe('end-to-end', () => {
         streamId = stream.id
         const server = Container.get(APIServer)
         await server.start()
+        apiPort = Container.get(APIServer).getPort()
     }, 30 * 1000)
 
     afterAll(async () => {
@@ -104,7 +107,7 @@ describe('end-to-end', () => {
         await crawler.updateStreams()
         clearTimeout(publisherTimer)
 
-        const stream = (await getStream(streamId))!
+        const stream = (await getStream(streamId, apiPort))!
         expect(stream.peerCount).toBe(2)
         expect(stream.messagesPerSecond).toBeGreaterThan(0)
         expect(stream.publisherCount).toBe(1)
