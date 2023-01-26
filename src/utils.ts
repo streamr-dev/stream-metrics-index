@@ -3,8 +3,6 @@ import { readFile } from 'fs/promises'
 import { omit } from 'lodash'
 import { Connection, createConnection } from 'mysql2/promise'
 import fetch from 'node-fetch'
-import Container from 'typedi'
-import { APIServer } from '../src/api/APIServer'
 import { Config } from './Config'
 
 const logger = new Logger(module)
