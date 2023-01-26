@@ -21,7 +21,7 @@ Start both applications:
 ./dist/bin/crawler.js CONFIG-FILE
 ```
 
-The GraphQL endpoint is available at http://localhost:PORT/api
+The GraphQL endpoint is available e.g. at <http://localhost:4001/api>.
 
 
 ## Test
@@ -35,3 +35,8 @@ streamr-docker-dev start mysql graph-deploy-streamregistry-subgraph trackers
 ```
 npm run test
 ```
+
+
+## API
+
+The API reference is available at the GraphQL endpoint (see "Docs" in the upper right corner).
