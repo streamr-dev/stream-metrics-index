@@ -28,7 +28,7 @@ export class StreamrClientFacade {
         return this.client.searchStreams(undefined, {
             user: owner,
             allowPublic: false,
-            anyOf: [StreamPermission.GRANT]  // TODO use allOf when https://github.com/streamr-dev/network/pull/1049 has been released
+            allOf: [StreamPermission.GRANT]
         })
     }
 
