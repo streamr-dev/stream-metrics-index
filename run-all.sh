@@ -1,7 +1,7 @@
 #!/bin/bash
-CONFIG_FILE=config/development.json
+CONFIG_FILE=$1
 
-if [ "$1" == "initialize-database" ] 
+if [ "$2" == "initialize-database" ] 
 then
     ./dist/bin/initialize-database.js $CONFIG_FILE
 fi

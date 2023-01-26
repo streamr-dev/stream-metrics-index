@@ -13,5 +13,7 @@ COPY --chown=node:node --from=build /usr/src/app/ .
 RUN npm ci --omit=dev
 
 EXPOSE 4001/tcp
+ENV CONFIG_FILE config/development.json
+HEALTHCHECK CMD ./dist/bin/health-check.js $CONFIG_FILE
 
-CMD ./run-all.sh initialize-database
+CMD ./run-all.sh $CONFIG_FILE initialize-database
