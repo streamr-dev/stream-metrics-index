@@ -1,7 +1,5 @@
 #!/usr/bin/env node
 
-import 'reflect-metadata'
-
 import { readFromFile } from '../src/Config'
 import { createDatabase, ensureDatabaseConnectivity } from '../src/utils'
 
