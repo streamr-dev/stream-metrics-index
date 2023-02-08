@@ -1,4 +1,5 @@
 import { Logger } from '@streamr/utils'
+import cors from 'cors'
 import { once } from 'events'
 import express from 'express'
 import { graphqlHTTP } from 'express-graphql'
@@ -32,6 +33,7 @@ export class APIServer {
             validate: false
         })
         const app = express()
+        app.use(cors())
         app.use(
             ENDPOINT,
             graphqlHTTP({
