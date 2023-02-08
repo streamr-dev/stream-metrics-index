@@ -46,6 +46,7 @@ export class Crawler {
             logger.info('Replace: %s', stream.id)
             await this.database.replaceStream({
                 id: stream.id,
+                description: stream.getMetadata().description ?? null,
                 peerCount,
                 messagesPerSecond,
                 publisherCount,

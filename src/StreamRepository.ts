@@ -7,6 +7,7 @@ import { collect } from './utils'
 
 interface StreamRow extends RowDataPacket {
     id: string
+    description: string | null
     peerCount: number
     messagesPerSecond: number
     publisherCount: number | null
@@ -57,7 +58,7 @@ export class StreamRepository {
         }
         const orderByExpression = StreamRepository.formOrderByExpression(orderBy ?? OrderBy.ID)
         const sql = `
-            SELECT id, peerCount, messagesPerSecond, publisherCount, subscriberCount 
+            SELECT id, description, peerCount, messagesPerSecond, publisherCount, subscriberCount 
             FROM streams
             ${(whereClauses.length > 0) ? 'WHERE ' + whereClauses.join(' AND ') : ''}
             ORDER BY ${orderByExpression}
@@ -83,6 +84,8 @@ export class StreamRepository {
         switch (orderBy) {
             case OrderBy.ID:
                 return 'id'
+            case OrderBy.DESCRIPTION:
+                return 'description IS NULL, description'
             case OrderBy.PEER_COUNT:
                 return 'peerCount DESC'
             case OrderBy.MESSAGES_PER_SECOND:
@@ -127,8 +130,8 @@ export class StreamRepository {
     async replaceStream(stream: Stream): Promise<void> {
         const connection = await this.connection
         await connection.query(
-            'REPLACE INTO streams (id, peerCount, messagesPerSecond, publisherCount, subscriberCount) VALUES (?, ?, ?, ?, ?)',
-            [stream.id, stream.peerCount, stream.messagesPerSecond, stream.publisherCount, stream.subscriberCount]
+            'REPLACE INTO streams (id, description, peerCount, messagesPerSecond, publisherCount, subscriberCount) VALUES (?, ?, ?, ?, ?, ?)',
+            [stream.id, stream.description, stream.peerCount, stream.messagesPerSecond, stream.publisherCount, stream.subscriberCount]
         )
     }
 

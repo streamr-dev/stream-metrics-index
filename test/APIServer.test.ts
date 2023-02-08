@@ -43,6 +43,7 @@ describe('APIServer', () => {
             const repository = Container.get(StreamRepository)
             const stream = {
                 id: 'id-1',
+                description: '',
                 peerCount: 123,
                 messagesPerSecond: 4.5,
                 publisherCount: 6,
@@ -53,6 +54,7 @@ describe('APIServer', () => {
                 streams {
                     items {
                         id
+                        description
                         peerCount
                         messagesPerSecond
                         publisherCount
@@ -68,6 +70,7 @@ describe('APIServer', () => {
             for (const i of range(5)) {
                 const stream = {
                     id: `id-${i}`,
+                    description: '',
                     peerCount: 123,
                     messagesPerSecond: 4.56,
                     publisherCount: null,
@@ -96,6 +99,7 @@ describe('APIServer', () => {
             const repository = Container.get(StreamRepository)
             await repository.replaceStream({
                 id: 'id-1',
+                description: '',
                 peerCount: 123,
                 messagesPerSecond: 200,
                 publisherCount: null,
@@ -103,6 +107,7 @@ describe('APIServer', () => {
             })
             await repository.replaceStream({
                 id: 'id-2',
+                description: '',
                 peerCount: 456,
                 messagesPerSecond: 100,
                 publisherCount: 10,
@@ -110,6 +115,7 @@ describe('APIServer', () => {
             })           
             await repository.replaceStream({
                 id: 'id-3',
+                description: '',
                 peerCount: 789,
                 messagesPerSecond: 300,
                 publisherCount: 20,
@@ -137,6 +143,7 @@ describe('APIServer', () => {
         const repository = Container.get(StreamRepository)
         await repository.replaceStream({
             id: 'foobar',
+            description: '',
             peerCount: 0,
             messagesPerSecond: 0,
             publisherCount: null,
@@ -144,6 +151,7 @@ describe('APIServer', () => {
         })
         await repository.replaceStream({
             id: 'loremipsum',
+            description: '',
             peerCount: 0,
             messagesPerSecond: 0,
             publisherCount: null,
@@ -170,6 +178,7 @@ describe('APIServer', () => {
         const repository = Container.get(StreamRepository)
         const stream = {
             id: 'id-1',
+            description: '',
             peerCount: 111,
             messagesPerSecond: 10,
             publisherCount: 1,
@@ -178,6 +187,7 @@ describe('APIServer', () => {
         await repository.replaceStream(stream)
         await repository.replaceStream({
             id: 'id-2',
+            description: '',
             peerCount: 222,
             messagesPerSecond: 20,
             publisherCount: 2,
@@ -187,6 +197,7 @@ describe('APIServer', () => {
             streams(owner: "${owner}") {
                 items {
                     id
+                    description
                     peerCount
                     messagesPerSecond
                     publisherCount
@@ -202,6 +213,7 @@ describe('APIServer', () => {
         const repository = Container.get(StreamRepository)
         await repository.replaceStream({
             id: 'id-1',
+            description: '',
             peerCount: 10,
             messagesPerSecond: 100,
             publisherCount: null,
@@ -209,6 +221,7 @@ describe('APIServer', () => {
         })
         await repository.replaceStream({
             id: 'id-2',
+            description: '',
             peerCount: 20,
             messagesPerSecond: 200,
             publisherCount: null,

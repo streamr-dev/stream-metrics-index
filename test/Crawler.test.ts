@@ -62,7 +62,12 @@ describe('Crawler', () => {
         await createDatabase(config.database)
         Container.set(CONFIG_TOKEN, config)
         Container.set(StreamrClientFacade, {
-            getAllStreams: () => [{ id: 'stream-id' }],
+            getAllStreams: () => [{ 
+                id: 'stream-id',
+                getMetadata: () => ({ 
+                    description:  'mock-description'
+                })
+            }],
             getPublisherOrSubscriberCount: (_streamId: string, permission: StreamPermission.PUBLISH | StreamPermission.SUBSCRIBE) => {
                 if (permission === StreamPermission.PUBLISH) {
                     return 10
@@ -88,6 +93,7 @@ describe('Crawler', () => {
         const streams = await connection.query('select * from streams')
         expect(streams[0]).toMatchObject([{
             id: 'stream-id',
+            description: 'mock-description',
             peerCount: 3,
             messagesPerSecond: '123.45',
             publisherCount: 10,

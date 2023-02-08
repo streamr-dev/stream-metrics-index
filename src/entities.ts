@@ -5,6 +5,8 @@ import { Field, Float, Int, ObjectType, registerEnumType } from 'type-graphql'
 export class Stream {
     @Field()
     id!: string
+    @Field(() => String, { nullable: true })
+    description!: string | null
     @Field(() => Int)
     peerCount!: number
     @Field(() => Float)
@@ -17,6 +19,7 @@ export class Stream {
 
 export enum OrderBy {
     ID = 'ID',
+    DESCRIPTION = 'DESCRIPTION',
     PEER_COUNT = 'PEER_COUNT',
     MESSAGES_PER_SECOND = 'MESSAGES_PER_SECOND',
     SUBSCRIBER_COUNT = 'SUBSCRIBER_COUNT',

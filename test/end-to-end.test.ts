@@ -27,6 +27,7 @@ const getStream = async (id: string, apiPort: number): Promise<Stream | undefine
         streams(searchTerm: "${id}" pageSize: 1) {
             items {
                 id
+                description
                 peerCount
                 messagesPerSecond
                 publisherCount
@@ -78,7 +79,12 @@ describe('end-to-end', () => {
         Container.set(CONFIG_TOKEN, config)
         publisher = createClient(PUBLISHER_PRIVATE_KEY)
         subscriber = createClient(SUBSCRIBER_PRIVATE_KEY)
-        const stream = await publisher.getOrCreateStream({ id: `/test/stream-metrics-index` })
+        const stream = await publisher.getOrCreateStream({ 
+            id: '/test/stream-metrics-index'
+        })
+        await stream.update({
+            description: 'mock-description'
+        })
         await stream.grantPermissions({
             user: await subscriber.getAddress(),
             permissions: [StreamPermission.SUBSCRIBE]
@@ -108,6 +114,7 @@ describe('end-to-end', () => {
         clearTimeout(publisherTimer)
 
         const stream = (await getStream(streamId, apiPort))!
+        expect(stream.description).toBe('mock-description')
         expect(stream.peerCount).toBe(2)
         expect(stream.messagesPerSecond).toBeGreaterThan(0)
         expect(stream.publisherCount).toBe(1)
