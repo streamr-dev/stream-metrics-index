@@ -209,6 +209,36 @@ describe('APIServer', () => {
         expect(streams.items).toEqual([stream])
     })
 
+    it('filter by id', async () => {
+        const repository = Container.get(StreamRepository)
+        for (const i of range(5)) {
+            const stream = {
+                id: `id-${i}`,
+                description: `description-${i}`,
+                peerCount: 0,
+                messagesPerSecond: 0,
+                publisherCount: null,
+                subscriberCount: null
+            }
+            await repository.replaceStream(stream)
+        }
+        const streams = await queryAPI(`{
+            streams(ids: ["id-2", "id-3"]) {
+                items {
+                    id,
+                    description
+                }
+            }
+        }`, apiPort)
+        expect(streams.items).toEqual([{
+            id: 'id-2',
+            description: 'description-2'
+        }, {
+            id: 'id-3',
+            description: 'description-3'
+        }])
+    })
+
     it('summary', async () => {
         const repository = Container.get(StreamRepository)
         await repository.replaceStream({

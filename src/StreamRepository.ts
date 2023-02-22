@@ -40,9 +40,13 @@ export class StreamRepository {
         })
     }
 
-    async getStreams(searchTerm?: string, owner?: string, orderBy?: OrderBy, pageSize?: number, cursor?: string): Promise<Streams> {
+    async getStreams(ids?: string[], searchTerm?: string, owner?: string, orderBy?: OrderBy, pageSize?: number, cursor?: string): Promise<Streams> {
         const whereClauses = []
         const params = []
+        if (ids !== undefined) {
+            whereClauses.push('id in (?)')
+            params.push(ids)
+        }
         if (searchTerm !== undefined) {
             whereClauses.push('id LIKE ?')
             params.push(`%${searchTerm}%`)
