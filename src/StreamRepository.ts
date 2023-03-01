@@ -1,3 +1,4 @@
+import { Logger } from '@streamr/utils'
 import { Connection, createConnection, RowDataPacket } from 'mysql2/promise'
 import { Inject, Service } from 'typedi'
 import { Config, CONFIG_TOKEN } from './Config'
@@ -21,6 +22,8 @@ const EMPTY_SEARCH_RESULT = {
 
 const DEFAULT_PAGE_SIZE = 100
 
+const logger = new Logger(module)
+
 @Service()
 export class StreamRepository {
 
@@ -41,6 +44,7 @@ export class StreamRepository {
     }
 
     async getStreams(ids?: string[], searchTerm?: string, owner?: string, orderBy?: OrderBy, pageSize?: number, cursor?: string): Promise<Streams> {
+        logger.info('Query: getStreams %o', { ids, searchTerm, owner, orderBy, pageSize, cursor })
         const whereClauses = []
         const params = []
         if (ids !== undefined) {
