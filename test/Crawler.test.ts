@@ -13,13 +13,18 @@ import { StreamrClientFacade } from '../src/StreamrClientFacade'
 import { createDatabase, createDatabaseConnection } from '../src/utils'
 import { dropTestDatabaseIfExists, TEST_DATABASE_NAME } from './utils'
 
-const startFakeTracker = async (): Promise<{ port: number, destroy: () => Promise<void> }> => {
+const TOPOLOGIES = [{
+    'stream-id#0': { 'node-1': [] },
+    'stream-id#3': { 'node-2': [], 'node-3': [] }
+}, {
+    'stream-id#1': { 'node-3': [], 'node-4': [], 'node-5': [] }
+}, {
+}]
+
+const startFakeTracker = async (topology: Record<string, any>): Promise<{ port: number, destroy: () => Promise<void> }> => {
     const app = express()
     app.get('/topology/:streamId', (_req: Request, res: Response) => {
-        res.json({
-            'stream-id#0': [{ 'neighborId': 'node-1' }],
-            'stream-id#1': [{ 'neighborId': 'node-2' }, { 'neighborId': 'node-3' }]
-        })
+        res.json(topology)
     })
     const server = app.listen()
     await once(server, 'listening')
@@ -35,11 +40,11 @@ const startFakeTracker = async (): Promise<{ port: number, destroy: () => Promis
 describe('Crawler', () => {
 
     let crawler: Crawler
-    let tracker: { port: number, destroy: () => Promise<void> }
+    let trackers: { port: number, destroy: () => Promise<void> }[]
     let config: any
 
     beforeEach(async () => {
-        tracker = await startFakeTracker()
+        trackers = await Promise.all(TOPOLOGIES.map((topology) => startFakeTracker(topology)))
         config = {
             crawler: {
                 subscribeDuration: 10
@@ -54,9 +59,9 @@ describe('Crawler', () => {
                 id: '0x1234567890123456789012345678901234567890',
                 ...TEST_CONFIG
             },
-            trackers: [{
-                http: `http://localhost:${tracker.port}`
-            }]
+            trackers: trackers.map((t) => ({
+                http: `http://localhost:${t.port}`
+            }))
         }
         await dropTestDatabaseIfExists(config.database)
         await createDatabase(config.database)
@@ -83,7 +88,7 @@ describe('Crawler', () => {
     })
 
     afterEach(async () => {
-        await tracker.destroy()
+        await Promise.all(trackers.map((tracker) => tracker.destroy()))
         Container.reset()
     })
     
@@ -94,7 +99,7 @@ describe('Crawler', () => {
         expect(streams[0]).toMatchObject([{
             id: 'stream-id',
             description: 'mock-description',
-            peerCount: 3,
+            peerCount: 5,
             messagesPerSecond: '123.45',
             publisherCount: 10,
             subscriberCount: 20

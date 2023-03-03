@@ -1,5 +1,5 @@
 import { Logger } from '@streamr/utils'
-import { difference } from 'lodash'
+import { difference, uniq } from 'lodash'
 import fetch from 'node-fetch'
 import { Stream, StreamPermission } from 'streamr-client'
 import { Inject, Service } from 'typedi'
@@ -59,19 +59,17 @@ export class Crawler {
 
     private async getPeerCount(streamId: string): Promise<number> {
         const trackerUrls = this.config.trackers.map((t) => t.http)
-        for (const trackerUrl of trackerUrls) {
+        const peerIds = await Promise.all(trackerUrls.map(async (trackerUrl) => {
             const response = await fetch(`${trackerUrl}/topology/${encodeURIComponent(streamId)}`)
             const json = await response.json()
             const streamParts = Object.keys(json)
             if (streamParts.length > 0) {
-                let peerCount = 0
-                streamParts.forEach((streamPartId: string) => {
-                    peerCount += Object.keys(json[streamPartId]).length
-                })
-                return peerCount
+                return streamParts.flatMap((streamPartId: string) => Object.keys(json[streamPartId]))
+            } else {
+                return []
             }
-        }
-        return 0
+        }))
+        return uniq(peerIds.flat()).length
     }
 
     private async cleanupDeletedStreams(contractStreams: Stream[]): Promise<void> {
