@@ -10,6 +10,7 @@
   "author": "Streamr Network AG <contact@streamr.network>",
   "dependencies": {
     "@streamr/network-node": "^7.3.0",
+    "@streamr/protocol": "^7.3.0",
     "@types/node-fetch": "^2.6.2",
     "class-validator": "^0.14.0",
     "cors": "^2.8.5",

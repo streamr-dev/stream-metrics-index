@@ -1,6 +1,7 @@
 import { createNetworkNode, NetworkNode } from '@streamr/network-node'
+import { StreamID, toStreamPartID } from '@streamr/protocol'
 import { Logger, MetricsContext, wait } from '@streamr/utils'
-import { Stream, StreamMessage } from 'streamr-client'
+import { StreamMessage } from 'streamr-client'
 import { Inject, Service } from 'typedi'
 import { Config, CONFIG_TOKEN } from '../Config'
 
@@ -28,19 +29,19 @@ export class MessageRateAnalyzer {
         })
     }
 
-    async getRate(stream: Stream): Promise<number> {
-        for (const streamPartId of stream.getStreamParts()) {
-            this.node.subscribe(streamPartId)
-        }
+    async getRate(streamId: StreamID, partitions: number[]): Promise<number> {
         let messageCount = 0
         const messageListener = (msg: StreamMessage) => {
-            if (msg.getStreamId() === stream.id) {
+            if (msg.getStreamId() === streamId) {
                 messageCount++
             }
         }
         this.node.addMessageListener(messageListener)
-        await wait(this.config.crawler.subscribeDuration)
-        for (const streamPartId of stream.getStreamParts()) {
+        for (const partition of partitions) {
+            const streamPartId = toStreamPartID(streamId, partition)
+            logger.info('Listen: %s', streamPartId)
+            this.node.subscribe(streamPartId)
+            await wait(this.config.crawler.subscribeDuration)
             this.node.unsubscribe(streamPartId)
         }
         this.node.removeMessageListener(messageListener)

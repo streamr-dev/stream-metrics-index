@@ -1,3 +1,4 @@
+import { StreamID, StreamPartIDUtils } from '@streamr/protocol'
 import { Logger } from '@streamr/utils'
 import { difference, uniq } from 'lodash'
 import fetch from 'node-fetch'
@@ -39,8 +40,12 @@ export class Crawler {
         logger.info(`Contract streams: ${contractStreams.length}`)
         for (const stream of contractStreams) {
             logger.info(`Analyze: ${stream.id}`)
-            const peerCount = await this.getPeerCount(stream.id)
-            const messagesPerSecond = (peerCount > 0) ? await this.messageRateAnalyzer.getRate(stream) : 0
+            const peersByPartition = await this.getPeersByPartition(stream.id)
+            const peerIds = uniq(peersByPartition.map((peer) => peer.peerIds).flat())
+            const peerCount = peerIds.length
+            const messagesPerSecond = (peerCount > 0) 
+                ? await this.messageRateAnalyzer.getRate(stream.id, peersByPartition.map((peer) => peer.partition))
+                : 0
             const publisherCount = await this.client.getPublisherOrSubscriberCount(stream.id, StreamPermission.PUBLISH)
             const subscriberCount = await this.client.getPublisherOrSubscriberCount(stream.id, StreamPermission.SUBSCRIBE)
             logger.info('Replace: %s', stream.id)
@@ -57,19 +62,20 @@ export class Crawler {
         logger.info(`Index updated`)
     }
 
-    private async getPeerCount(streamId: string): Promise<number> {
+    private async getPeersByPartition(streamId: StreamID): Promise<{ partition: number, peerIds: string[] }[]> {
         const trackerUrls = this.config.trackers.map((t) => t.http)
-        const peerIds = await Promise.all(trackerUrls.map(async (trackerUrl) => {
+        const topologySummaries = await Promise.all(trackerUrls.map(async (trackerUrl) => {
             const response = await fetch(`${trackerUrl}/topology/${encodeURIComponent(streamId)}`)
             const json = await response.json()
-            const streamParts = Object.keys(json)
-            if (streamParts.length > 0) {
-                return streamParts.flatMap((streamPartId: string) => Object.keys(json[streamPartId]))
-            } else {
-                return []
-            }
+            const streamParts = Object.keys(json).map((key) => StreamPartIDUtils.parse(key))
+            return streamParts.map((streamPart) => {
+                return {
+                    partition: StreamPartIDUtils.getStreamPartition(streamPart),
+                    peerIds: Object.keys(json[streamPart])
+                }
+            })
         }))
-        return uniq(peerIds.flat()).length
+        return topologySummaries.flat()
     }
 
     private async cleanupDeletedStreams(contractStreams: Stream[]): Promise<void> {
