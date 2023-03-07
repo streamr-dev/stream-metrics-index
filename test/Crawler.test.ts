@@ -4,12 +4,12 @@ import { TEST_CONFIG } from '@streamr/network-node'
 import { once } from 'events'
 import express, { Request, Response } from 'express'
 import { AddressInfo } from 'net'
-import { StreamPermission } from 'streamr-client'
+import { StreamMessage, StreamPermission } from 'streamr-client'
 import Container from 'typedi'
 import { CONFIG_TOKEN } from '../src/Config'
 import { Crawler } from '../src/crawler/Crawler'
-import { MessageRateAnalyzer } from '../src/crawler/MessageRateAnalyzer'
 import { StreamrClientFacade } from '../src/StreamrClientFacade'
+import { NetworkNodeFacade } from '../src/crawler/NetworkNodeFacade'
 import { createDatabase, createDatabaseConnection } from '../src/utils'
 import { dropTestDatabaseIfExists, TEST_DATABASE_NAME } from './utils'
 
@@ -20,6 +20,12 @@ const TOPOLOGIES = [{
     'stream-id#1': { 'node-3': [], 'node-4': [], 'node-5': [] }
 }, {
 }]
+
+const createMockMessage = (): Partial<StreamMessage> => {
+    return {
+        getStreamId: () => 'stream-id' as any
+    }
+}
 
 const startFakeTracker = async (topology: Record<string, any>): Promise<{ port: number, destroy: () => Promise<void> }> => {
     const app = express()
@@ -47,7 +53,7 @@ describe('Crawler', () => {
         trackers = await Promise.all(TOPOLOGIES.map((topology) => startFakeTracker(topology)))
         config = {
             crawler: {
-                subscribeDuration: 10
+                subscribeDuration: 2000
             },
             database: {
                 host: '10.200.10.1',
@@ -81,8 +87,20 @@ describe('Crawler', () => {
                 }
             }
         })
-        Container.set(MessageRateAnalyzer, {
-            getRate: () => 123.45
+        Container.set(NetworkNodeFacade, {
+            // eslint-disable-next-line @typescript-eslint/no-empty-function
+            subscribe: () => {},
+            // eslint-disable-next-line @typescript-eslint/no-empty-function
+            unsubscribe: () => {},
+            addMessageListener: (onMessage: (msg: StreamMessage) => void) => {
+                setImmediate(() => {
+                    onMessage(createMockMessage() as any)
+                    onMessage(createMockMessage() as any)
+                    onMessage(createMockMessage() as any)
+                })
+            },
+            // eslint-disable-next-line @typescript-eslint/no-empty-function
+            removeMessageListener: () => {}
         })
         crawler = Container.get(Crawler)
     })
@@ -100,10 +118,10 @@ describe('Crawler', () => {
             id: 'stream-id',
             description: 'mock-description',
             peerCount: 5,
-            messagesPerSecond: '123.45',
+            messagesPerSecond: '1.50',
             publisherCount: 10,
             subscriberCount: 20
         }])
         connection.destroy()
-    })
+    }, 30 * 1000)
 })

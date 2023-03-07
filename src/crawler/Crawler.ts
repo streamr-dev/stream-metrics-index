@@ -8,25 +8,26 @@ import { Config, CONFIG_TOKEN } from '../Config'
 import { StreamrClientFacade } from '../StreamrClientFacade'
 import { StreamRepository } from '../StreamRepository'
 import { collect, retry } from '../utils'
-import { MessageRateAnalyzer } from './MessageRateAnalyzer'
+import { getMessageRate } from './messageRate'
+import { NetworkNodeFacade } from './NetworkNodeFacade'
 
 const logger = new Logger(module)
 
 @Service()
 export class Crawler {
 
-    private readonly messageRateAnalyzer: MessageRateAnalyzer
+    private readonly networkNode: NetworkNodeFacade
     private readonly database: StreamRepository
     private readonly client: StreamrClientFacade
     private readonly config: Config
 
     constructor(
-        @Inject() messageRateAnalyzer: MessageRateAnalyzer,
+        @Inject() networkNode: NetworkNodeFacade,
         @Inject() database: StreamRepository,
         @Inject() client: StreamrClientFacade,
         @Inject(CONFIG_TOKEN) config: Config
     ) {
-        this.messageRateAnalyzer = messageRateAnalyzer
+        this.networkNode = networkNode
         this.database = database
         this.client = client
         this.config = config
@@ -44,7 +45,12 @@ export class Crawler {
             const peerIds = uniq(peersByPartition.map((peer) => peer.peerIds).flat())
             const peerCount = peerIds.length
             const messagesPerSecond = (peerCount > 0) 
-                ? await this.messageRateAnalyzer.getRate(stream.id, peersByPartition.map((peer) => peer.partition))
+                ? await getMessageRate(
+                    stream.id, 
+                    peersByPartition.map((peer) => peer.partition),
+                    this.networkNode,
+                    this.config
+                )
                 : 0
             const publisherCount = await this.client.getPublisherOrSubscriberCount(stream.id, StreamPermission.PUBLISH)
             const subscriberCount = await this.client.getPublisherOrSubscriberCount(stream.id, StreamPermission.SUBSCRIBE)
