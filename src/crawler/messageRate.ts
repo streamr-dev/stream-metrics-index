@@ -1,10 +1,13 @@
 import { StreamID, toStreamPartID } from '@streamr/protocol'
 import { Logger, wait } from '@streamr/utils'
+import { sampleSize } from 'lodash'
 import { StreamMessage } from 'streamr-client'
 import { Config } from '../Config'
 import { NetworkNodeFacade } from './NetworkNodeFacade'
 
 const logger = new Logger(module)
+
+export const MAX_PARTITION_COUNT = 10
 
 export const getMessageRate = async (
     streamId: StreamID,
@@ -19,7 +22,8 @@ export const getMessageRate = async (
         }
     }
     node.addMessageListener(messageListener)
-    for (const partition of activePartitions) {
+    const samplePartitions = sampleSize(activePartitions, MAX_PARTITION_COUNT)
+    for (const partition of samplePartitions) {
         const streamPartId = toStreamPartID(streamId, partition)
         logger.info('Listen: %s', streamPartId)
         node.subscribe(streamPartId)
@@ -27,5 +31,6 @@ export const getMessageRate = async (
         node.unsubscribe(streamPartId)
     }
     node.removeMessageListener(messageListener)
-    return messageCount / (config.crawler.subscribeDuration / 1000)
+    const partitionMultiplier = activePartitions.length / samplePartitions.length
+    return messageCount / (config.crawler.subscribeDuration / 1000) * partitionMultiplier
 }
