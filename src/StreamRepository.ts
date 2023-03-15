@@ -119,12 +119,17 @@ export class StreamRepository {
         return rows[0]
     }
 
-    async getIds(): Promise<string[]> {
+    async getAllStreams(): Promise<{ id: string, crawlTimestamp: number }[]> {
         const connection = await this.connection
         const [ rows ] = await connection.query<StreamRow[]>(
-            'SELECT id FROM streams'
+            'SELECT id, crawlTimestamp FROM streams'
         )
-        return rows.map((r) => r.id)
+        return rows.map((r) => {
+            return {
+                id: r.id,
+                crawlTimestamp: Date.parse(r.crawlTimestamp)
+            }
+        })
     }
 
     async deleteStream(id: string): Promise<void> {
@@ -138,8 +143,12 @@ export class StreamRepository {
     async replaceStream(stream: Stream): Promise<void> {
         const connection = await this.connection
         await connection.query(
-            'REPLACE INTO streams (id, description, peerCount, messagesPerSecond, publisherCount, subscriberCount) VALUES (?, ?, ?, ?, ?, ?)',
-            [stream.id, stream.description, stream.peerCount, stream.messagesPerSecond, stream.publisherCount, stream.subscriberCount]
+            `REPLACE INTO streams (
+                id, description, peerCount, messagesPerSecond, publisherCount, subscriberCount, crawlTimestamp
+            ) VALUES (
+                ?, ?, ?, ?, ?, ?, ?
+            )`,
+            [stream.id, stream.description, stream.peerCount, stream.messagesPerSecond, stream.publisherCount, stream.subscriberCount, new Date()]
         )
     }
 

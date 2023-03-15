@@ -1,6 +1,6 @@
 import { StreamID, StreamPartIDUtils } from '@streamr/protocol'
 import { Logger } from '@streamr/utils'
-import { difference, uniq } from 'lodash'
+import { difference, sortBy, uniq } from 'lodash'
 import fetch from 'node-fetch'
 import { Stream, StreamPermission } from 'streamr-client'
 import { Inject, Service } from 'typedi'
@@ -12,6 +12,19 @@ import { getMessageRate } from './messageRate'
 import { NetworkNodeFacade } from './NetworkNodeFacade'
 
 const logger = new Logger(module)
+
+const getCrawlOrderComparator = (databaseStreams: { id: string, crawlTimestamp: number }[]) => {
+    // first all streams, which have not been crawled yet
+    // then other streams, most recently crawled last
+    return (stream: Stream) => {
+        const databaseStream = databaseStreams.find((s) => s.id === stream.id)
+        if (databaseStream !== undefined) {
+            return databaseStream.crawlTimestamp
+        } else {
+            return 0
+        }
+    }
+}
 
 @Service()
 export class Crawler {
@@ -38,8 +51,10 @@ export class Crawler {
         // the graph-node dependency may not be available immediately after the service has
         // been started
         const contractStreams = await retry(() => collect(this.client.getAllStreams()), 'Query streams')
-        logger.info(`Contract streams: ${contractStreams.length}`)
-        for (const stream of contractStreams) {
+        const databaseStreams = await this.database.getAllStreams()
+        logger.info(`Start: contractStreams=${contractStreams.length}, databaseStreams=${databaseStreams.length}`)
+        const sortedContractStreams = sortBy(contractStreams, getCrawlOrderComparator(databaseStreams))
+        for (const stream of sortedContractStreams) {
             logger.info(`Analyze: ${stream.id}`)
             const peersByPartition = await this.getPeersByPartition(stream.id)
             const peerIds = uniq(peersByPartition.map((peer) => peer.peerIds).flat())
@@ -64,7 +79,7 @@ export class Crawler {
                 subscriberCount
             })
         }
-        await this.cleanupDeletedStreams(contractStreams)
+        await this.cleanupDeletedStreams(contractStreams, databaseStreams)
         logger.info(`Index updated`)
     }
 
@@ -84,9 +99,9 @@ export class Crawler {
         return topologySummaries.flat()
     }
 
-    private async cleanupDeletedStreams(contractStreams: Stream[]): Promise<void> {
+    private async cleanupDeletedStreams(contractStreams: Stream[], databaseStreams: { id: string }[]): Promise<void> {
         const contractStreamIds = contractStreams.map((s) => s.id)
-        const databaseStreamIds = await this.database.getIds()
+        const databaseStreamIds = databaseStreams.map((s) => s.id)
         const removedStreamsIds = difference(databaseStreamIds, contractStreamIds)
         for (const streamId of removedStreamsIds) {
             logger.info('Delete: %s', streamId)
