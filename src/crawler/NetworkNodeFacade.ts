@@ -14,11 +14,13 @@ export class NetworkNodeFacade {
     constructor(
         @Inject(CONFIG_TOKEN) config: Config
     ) {
-        logger.info('Network node: %s', config.networkNode.id)
+        const nodeId = `${config.networkNode.id}#${Date.now()}`
+        logger.info('Network node: %s', nodeId)
         this.node = createNetworkNode({
+            ...config.networkNode,
             trackers: config.trackers,
             metricsContext: new MetricsContext(),
-            ...config.networkNode
+            id: nodeId
         })
     }
 
