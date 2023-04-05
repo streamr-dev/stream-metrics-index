@@ -20,7 +20,13 @@ export class NetworkNodeFacade {
             ...config.networkNode,
             trackers: config.trackers,
             metricsContext: new MetricsContext(),
-            id: nodeId
+            id: nodeId,
+            // TODO webrtcPortRange and webrtcMaxMessageSize from config file
+            webrtcPortRange: {
+                min: 6000,
+                max: 65535
+            },
+            webrtcMaxMessageSize: 1048576
         })
     }
 

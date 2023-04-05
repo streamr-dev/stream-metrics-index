@@ -9,8 +9,8 @@
   },
   "author": "Streamr Network AG <contact@streamr.network>",
   "dependencies": {
-    "@streamr/network-node": "^8.0.3",
-    "@streamr/protocol": "^8.0.3",
+    "@streamr/network-node": "^8.1.0",
+    "@streamr/protocol": "^8.1.0",
     "@types/node-fetch": "^2.6.2",
     "class-validator": "^0.14.0",
     "cors": "^2.8.5",
@@ -21,7 +21,7 @@
     "mysql2": "^2.3.3",
     "node-fetch": "^2.6.2",
     "reflect-metadata": "^0.1.13",
-    "streamr-client": "^8.0.3",
+    "streamr-client": "^8.1.0",
     "type-graphql": "^1.2.0-rc.1",
     "typedi": "^0.10.0"
   },
