@@ -7,7 +7,7 @@ import { APIServer } from '../src/api/APIServer'
 import { CONFIG_TOKEN } from '../src/Config'
 import { Crawler } from '../src/crawler/Crawler'
 import { Stream } from '../src/entities'
-import { collect, createDatabase, queryAPI } from '../src/utils'
+import { createDatabase, queryAPI } from '../src/utils'
 import { dropTestDatabaseIfExists, TEST_DATABASE_NAME } from './utils'
 
 const PUBLISHER_PRIVATE_KEY = '0x0000000000000000000000000000000000000000000000000000000000000001'

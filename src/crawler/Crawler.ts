@@ -1,7 +1,7 @@
 import { StreamID, StreamPartIDUtils } from '@streamr/protocol'
 import { Logger } from '@streamr/utils'
 import { difference, sortBy, uniq } from 'lodash'
-import fetch from 'node-fetch'
+import fetch, { Response } from 'node-fetch'
 import PQueue from 'p-queue'
 import { Stream, StreamPermission } from 'streamr-client'
 import { Inject, Service } from 'typedi'
@@ -9,10 +9,12 @@ import { Config, CONFIG_TOKEN } from '../Config'
 import { Gate } from '../Gate'
 import { StreamrClientFacade } from '../StreamrClientFacade'
 import { StreamRepository } from '../StreamRepository'
-import { collect, retry } from '../utils'
+import { collect, retry, withThrottling } from '../utils'
 import { getMessageRate } from './messageRate'
 import { NetworkNodeFacade } from './NetworkNodeFacade'
 import { MAX_SUBSCRIPTION_COUNT, SubscribeGate } from './SubscribeGate'
+
+const MAX_TRACKER_QUERIES_PER_SECOND = 10 // TODO from config file, could fine-tune so that queries are limited separately for each Tracker
 
 const logger = new Logger(module)
 
@@ -37,6 +39,7 @@ export class Crawler {
     private readonly database: StreamRepository
     private readonly client: StreamrClientFacade
     private readonly config: Config
+    private readonly fetchTrackerTopology: (trackerUrl: string, streamId: StreamID) => Promise<Response>
 
     constructor(
         @Inject() networkNode: NetworkNodeFacade,
@@ -50,6 +53,9 @@ export class Crawler {
         this.database = database
         this.client = client
         this.config = config
+        this.fetchTrackerTopology = withThrottling((trackerUrl: string, streamId: StreamID) => {
+            return fetch(`${trackerUrl}/topology/${encodeURIComponent(streamId)}`)
+        }, MAX_TRACKER_QUERIES_PER_SECOND)
     }
 
     async updateStreams(): Promise<void> {
@@ -100,7 +106,7 @@ export class Crawler {
     private async getPeersByPartition(streamId: StreamID): Promise<{ partition: number, peerIds: string[] }[]> {
         const trackerUrls = this.config.trackers.map((t) => t.http)
         const topologySummaries = await Promise.all(trackerUrls.map(async (trackerUrl) => {
-            const response = await fetch(`${trackerUrl}/topology/${encodeURIComponent(streamId)}`)
+            const response = await this.fetchTrackerTopology(trackerUrl, streamId)
             const json = await response.json()
             const streamParts = Object.keys(json).map((key) => StreamPartIDUtils.parse(key))
             return streamParts.map((streamPart) => {

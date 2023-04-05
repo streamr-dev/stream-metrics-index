@@ -3,6 +3,7 @@ import { readFile } from 'fs/promises'
 import { omit } from 'lodash'
 import { Connection, createConnection } from 'mysql2/promise'
 import fetch from 'node-fetch'
+import pThrottle from 'p-throttle'
 import { Config } from './Config'
 
 const logger = new Logger(module)
@@ -81,4 +82,12 @@ export const queryAPI = async (query: string, port: number): Promise<any> => {
     } else {
         throw new Error(`Query error: ${body.errors.map((e: any) => e.message)}`)
     }
+}
+
+export const withThrottling = (fn: (...args: any[]) => Promise<any>, maxInvocationsPerSecond: number): ((...args: any[]) => Promise<any>) => {
+    const throttler = pThrottle({
+        limit: maxInvocationsPerSecond,
+        interval: 1000
+    })
+    return throttler(fn)
 }

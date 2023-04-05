@@ -22,6 +22,7 @@
     "mysql2": "^2.3.3",
     "node-fetch": "^2.6.2",
     "p-queue": "6.6.2",
+    "p-throttle": "^4.0.0",
     "reflect-metadata": "^0.1.13",
     "streamr-client": "^8.1.0",
     "type-graphql": "^1.2.0-rc.1",
