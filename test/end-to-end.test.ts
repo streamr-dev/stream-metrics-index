@@ -44,6 +44,11 @@ const getStream = async (id: string, apiPort: number): Promise<Stream | undefine
     }
 }
 
+export const nextValue = async <T>(source: AsyncIterator<T>): Promise<T | undefined> => {
+    const item = source.next()
+    return (await item).value
+}
+
 describe('end-to-end', () => {
 
     let publisher: StreamrClient
@@ -108,7 +113,8 @@ describe('end-to-end', () => {
         }, 500)
 
         // wait until publisher and subscriber are connected
-        await collect(subscription, 1)
+        const iterator = subscription[Symbol.asyncIterator]()
+        await nextValue(iterator)
         crawler = Container.get(Crawler)
         await crawler.updateStreams()
         clearTimeout(publisherTimer)
