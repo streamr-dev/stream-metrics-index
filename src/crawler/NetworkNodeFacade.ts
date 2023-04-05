@@ -1,8 +1,14 @@
+import EventEmitter3 from 'eventemitter3'
 import { createNetworkNode, NetworkNode } from '@streamr/network-node'
 import { Logger, MetricsContext } from '@streamr/utils'
 import { StreamMessage, StreamPartID } from 'streamr-client'
 import { Inject, Service } from 'typedi'
 import { Config, CONFIG_TOKEN } from '../Config'
+
+export interface Events {
+    subscribe: () => void
+    unsubscribe: () => void
+}
 
 const logger = new Logger(module)
 
@@ -10,6 +16,7 @@ const logger = new Logger(module)
 export class NetworkNodeFacade {
 
     private readonly node: NetworkNode
+    private readonly eventEmitter: EventEmitter3<Events> = new EventEmitter3()
 
     constructor(
         @Inject(CONFIG_TOKEN) config: Config
@@ -32,10 +39,12 @@ export class NetworkNodeFacade {
 
     subscribe(streamPartId: StreamPartID): void {
         this.node.subscribe(streamPartId)
+        this.eventEmitter.emit('subscribe')
     }
 
     unsubscribe(streamPartId: StreamPartID): void {
         this.node.unsubscribe(streamPartId)
+        this.eventEmitter.emit('unsubscribe')
     }
 
     addMessageListener(listener: (msg: StreamMessage) => void): void {
@@ -44,6 +53,14 @@ export class NetworkNodeFacade {
 
     removeMessageListener(listener: (msg: StreamMessage) => void): void {
         this.node.removeMessageListener(listener)
+    }
+
+    getSubscriptionCount(): number {
+        return Array.from(this.node.getStreamParts()).length
+    }
+
+    on<T extends keyof Events>(eventName: T, listener: Events[T]): void {
+        this.eventEmitter.on(eventName, listener as any)
     }
 
     destroy(): void {

@@ -4,6 +4,7 @@ import { sampleSize } from 'lodash'
 import { StreamMessage } from 'streamr-client'
 import { Config } from '../Config'
 import { NetworkNodeFacade } from './NetworkNodeFacade'
+import { Gate } from '../Gate'
 
 const logger = new Logger(module)
 
@@ -13,6 +14,7 @@ export const getMessageRate = async (
     streamId: StreamID,
     activePartitions: number[],
     node: NetworkNodeFacade,
+    subscibeGate: Gate,
     config: Config
 ): Promise<number> => {
     let messageCount = 0
@@ -24,6 +26,7 @@ export const getMessageRate = async (
     node.addMessageListener(messageListener)
     const samplePartitions = sampleSize(activePartitions, MAX_PARTITION_COUNT)
     for (const partition of samplePartitions) {
+        await subscibeGate.waitUntilOpen()
         const streamPartId = toStreamPartID(streamId, partition)
         logger.info('Listen: %s', streamPartId)
         node.subscribe(streamPartId)

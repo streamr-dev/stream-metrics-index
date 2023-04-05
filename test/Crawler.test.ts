@@ -12,6 +12,7 @@ import { StreamrClientFacade } from '../src/StreamrClientFacade'
 import { NetworkNodeFacade } from '../src/crawler/NetworkNodeFacade'
 import { createDatabase, createDatabaseConnection } from '../src/utils'
 import { dropTestDatabaseIfExists, TEST_DATABASE_NAME } from './utils'
+import { SubscribeGate } from '../src/crawler/SubscribeGate'
 
 const TOPOLOGIES = [{
     'stream-id#0': { 'node-1': [] },
@@ -101,6 +102,9 @@ describe('Crawler', () => {
             },
             // eslint-disable-next-line @typescript-eslint/no-empty-function
             removeMessageListener: () => {}
+        })
+        Container.set(SubscribeGate, {
+            waitUntilOpen: () => Promise.resolve(undefined)
         })
         crawler = Container.get(Crawler)
     })

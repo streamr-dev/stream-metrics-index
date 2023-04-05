@@ -2,14 +2,17 @@ import { StreamID, StreamPartIDUtils } from '@streamr/protocol'
 import { Logger } from '@streamr/utils'
 import { difference, sortBy, uniq } from 'lodash'
 import fetch from 'node-fetch'
+import PQueue from 'p-queue'
 import { Stream, StreamPermission } from 'streamr-client'
 import { Inject, Service } from 'typedi'
 import { Config, CONFIG_TOKEN } from '../Config'
+import { Gate } from '../Gate'
 import { StreamrClientFacade } from '../StreamrClientFacade'
 import { StreamRepository } from '../StreamRepository'
 import { collect, retry } from '../utils'
 import { getMessageRate } from './messageRate'
 import { NetworkNodeFacade } from './NetworkNodeFacade'
+import { MAX_SUBSCRIPTION_COUNT, SubscribeGate } from './SubscribeGate'
 
 const logger = new Logger(module)
 
@@ -30,17 +33,20 @@ const getCrawlOrderComparator = (databaseStreams: { id: string, crawlTimestamp: 
 export class Crawler {
 
     private readonly networkNode: NetworkNodeFacade
+    private readonly subscribeGate: SubscribeGate
     private readonly database: StreamRepository
     private readonly client: StreamrClientFacade
     private readonly config: Config
 
     constructor(
         @Inject() networkNode: NetworkNodeFacade,
+        @Inject() subscribeGate: SubscribeGate,
         @Inject() database: StreamRepository,
         @Inject() client: StreamrClientFacade,
         @Inject(CONFIG_TOKEN) config: Config
     ) {
         this.networkNode = networkNode
+        this.subscribeGate = subscribeGate
         this.database = database
         this.client = client
         this.config = config
@@ -54,33 +60,41 @@ export class Crawler {
         const databaseStreams = await this.database.getAllStreams()
         logger.info(`Start: contractStreams=${contractStreams.length}, databaseStreams=${databaseStreams.length}`)
         const sortedContractStreams = sortBy(contractStreams, getCrawlOrderComparator(databaseStreams))
-        for (const stream of sortedContractStreams) {
-            logger.info(`Analyze: ${stream.id}`)
-            const peersByPartition = await this.getPeersByPartition(stream.id)
-            const peerIds = uniq(peersByPartition.map((peer) => peer.peerIds).flat())
-            const peerCount = peerIds.length
-            const messagesPerSecond = (peerCount > 0) 
-                ? await getMessageRate(
-                    stream.id, 
-                    peersByPartition.map((peer) => peer.partition),
-                    this.networkNode,
-                    this.config
-                )
-                : 0
-            const publisherCount = await this.client.getPublisherOrSubscriberCount(stream.id, StreamPermission.PUBLISH)
-            const subscriberCount = await this.client.getPublisherOrSubscriberCount(stream.id, StreamPermission.SUBSCRIBE)
-            logger.info('Replace: %s', stream.id)
-            await this.database.replaceStream({
-                id: stream.id,
-                description: stream.getMetadata().description ?? null,
-                peerCount,
-                messagesPerSecond,
-                publisherCount,
-                subscriberCount
-            })
-        }
+        // note that the task execution is primary limited by SubscribeGate, the concurrency setting
+        // defined here is less relevant (but MAX_SUBSCRIPTION_COUNT is a good approximation
+        // for the worker thread count as streams typically used only one partition)
+        const taskQueue = new PQueue({ concurrency: MAX_SUBSCRIPTION_COUNT })
+        const tasks = sortedContractStreams.map((stream) => () => this.analyzeStream(stream, this.subscribeGate))
+        await taskQueue.addAll(tasks)
         await this.cleanupDeletedStreams(contractStreams, databaseStreams)
         logger.info(`Index updated`)
+    }
+
+    private async analyzeStream(stream: Stream, subscribeGate: Gate): Promise<void> {
+        logger.info(`Analyze: ${stream.id}`)
+        const peersByPartition = await this.getPeersByPartition(stream.id)
+        const peerIds = uniq(peersByPartition.map((peer) => peer.peerIds).flat())
+        const peerCount = peerIds.length
+        const messagesPerSecond = (peerCount > 0) 
+            ? await getMessageRate(
+                stream.id, 
+                peersByPartition.map((peer) => peer.partition),
+                this.networkNode,
+                subscribeGate,
+                this.config
+            )
+            : 0
+        const publisherCount = await this.client.getPublisherOrSubscriberCount(stream.id, StreamPermission.PUBLISH)
+        const subscriberCount = await this.client.getPublisherOrSubscriberCount(stream.id, StreamPermission.SUBSCRIBE)
+        logger.info('Replace: %s', stream.id)
+        await this.database.replaceStream({
+            id: stream.id,
+            description: stream.getMetadata().description ?? null,
+            peerCount,
+            messagesPerSecond,
+            publisherCount,
+            subscriberCount
+        })
     }
 
     private async getPeersByPartition(streamId: StreamID): Promise<{ partition: number, peerIds: string[] }[]> {

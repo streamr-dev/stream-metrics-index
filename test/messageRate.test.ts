@@ -1,6 +1,7 @@
 import { StreamMessage, toStreamID, toStreamPartID } from '@streamr/protocol'
 import { range } from 'lodash'
 import { getMessageRate, MAX_PARTITION_COUNT } from '../src/crawler/messageRate'
+import { Gate } from '../src/Gate'
 
 const STREAM_ID = toStreamID('stream-id')
 
@@ -32,7 +33,7 @@ const createMockNode = (): any => {
 describe('messageRate', () => {
     it('happy path', async () => {
         const node = createMockNode()
-        const actual = await getMessageRate(STREAM_ID, [1, 4, 5], node, {
+        const actual = await getMessageRate(STREAM_ID, [1, 4, 5], node, new Gate(true), {
             crawler: {
                 subscribeDuration: 200
             }
@@ -50,7 +51,7 @@ describe('messageRate', () => {
         const partitionMultiplier = 4
         const partitions = range(MAX_PARTITION_COUNT * partitionMultiplier)
         const node = createMockNode()
-        const actual = await getMessageRate(STREAM_ID, partitions, node, {
+        const actual = await getMessageRate(STREAM_ID, partitions, node, new Gate(true), {
             crawler: {
                 subscribeDuration: 200
             }
