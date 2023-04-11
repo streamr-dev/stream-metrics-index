@@ -3,16 +3,17 @@ import 'reflect-metadata'
 import { TEST_CONFIG } from '@streamr/network-node'
 import { once } from 'events'
 import express, { Request, Response } from 'express'
+import { Server } from 'http'
 import { AddressInfo } from 'net'
 import { StreamMessage, StreamPermission } from 'streamr-client'
 import Container from 'typedi'
 import { CONFIG_TOKEN } from '../src/Config'
-import { Crawler } from '../src/crawler/Crawler'
 import { StreamrClientFacade } from '../src/StreamrClientFacade'
+import { Crawler } from '../src/crawler/Crawler'
 import { NetworkNodeFacade } from '../src/crawler/NetworkNodeFacade'
-import { createDatabase, createDatabaseConnection } from '../src/utils'
-import { dropTestDatabaseIfExists, TEST_DATABASE_NAME } from './utils'
 import { SubscribeGate } from '../src/crawler/SubscribeGate'
+import { createDatabase, createDatabaseConnection } from '../src/utils'
+import { TEST_DATABASE_NAME, dropTestDatabaseIfExists, startTheGraphServer } from './utils'
 
 const TOPOLOGIES = [{
     'stream-id#0': { 'node-1': [] },
@@ -49,9 +50,11 @@ describe('Crawler', () => {
     let crawler: Crawler
     let trackers: { port: number, destroy: () => Promise<void> }[]
     let config: any
+    let theGraphServer: Server
 
     beforeEach(async () => {
         trackers = await Promise.all(TOPOLOGIES.map((topology) => startFakeTracker(topology)))
+        theGraphServer = await startTheGraphServer([])
         config = {
             crawler: {
                 subscribeDuration: 2000
@@ -68,7 +71,10 @@ describe('Crawler', () => {
             },
             trackers: trackers.map((t) => ({
                 http: `http://localhost:${t.port}`
-            }))
+            })),
+            contracts: {
+                theGraphUrl: `http://localhost:${(theGraphServer.address() as AddressInfo).port}/path`
+            }
         }
         await dropTestDatabaseIfExists(config.database)
         await createDatabase(config.database)
@@ -111,6 +117,7 @@ describe('Crawler', () => {
 
     afterEach(async () => {
         await Promise.all(trackers.map((tracker) => tracker.destroy()))
+        theGraphServer.close()
         Container.reset()
     })
     

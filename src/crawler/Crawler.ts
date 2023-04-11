@@ -5,16 +5,19 @@ import fetch, { Response } from 'node-fetch'
 import PQueue from 'p-queue'
 import { Stream, StreamPermission } from 'streamr-client'
 import { Inject, Service } from 'typedi'
-import { Config, CONFIG_TOKEN } from '../Config'
-import { Gate } from '../Gate'
-import { StreamrClientFacade } from '../StreamrClientFacade'
+import { CONFIG_TOKEN, Config } from '../Config'
 import { StreamRepository } from '../StreamRepository'
+import { StreamrClientFacade } from '../StreamrClientFacade'
 import { collect, retry, withThrottling } from '../utils'
-import { getMessageRate } from './messageRate'
 import { NetworkNodeFacade } from './NetworkNodeFacade'
+import { NewStreamsPoller } from './NewStreamsPoller'
 import { MAX_SUBSCRIPTION_COUNT, SubscribeGate } from './SubscribeGate'
+import { getMessageRate } from './messageRate'
 
 const MAX_TRACKER_QUERIES_PER_SECOND = 10 // TODO from config file, could fine-tune so that queries are limited separately for each Tracker
+const NEW_STREAM_POLL_INTERVAL = 30 * 60 * 1000 // TODO from config file
+const PRIORITY_MEDIUM = 0
+const PRIORITY_HIGH = 1
 
 const logger = new Logger(module)
 
@@ -59,6 +62,7 @@ export class Crawler {
     }
 
     async updateStreams(): Promise<void> {
+
         // wrap this.client.getAllStreams() with retry because in streamr-docker-dev environment
         // the graph-node dependency may not be available immediately after the service has
         // been started
@@ -66,17 +70,32 @@ export class Crawler {
         const databaseStreams = await this.database.getAllStreams()
         logger.info(`Start: contractStreams=${contractStreams.length}, databaseStreams=${databaseStreams.length}`)
         const sortedContractStreams = sortBy(contractStreams, getCrawlOrderComparator(databaseStreams))
+
         // note that the task execution is primary limited by SubscribeGate, the concurrency setting
         // defined here is less relevant (but MAX_SUBSCRIPTION_COUNT is a good approximation
         // for the worker thread count as streams typically used only one partition)
         const taskQueue = new PQueue({ concurrency: MAX_SUBSCRIPTION_COUNT })
-        const tasks = sortedContractStreams.map((stream) => () => this.analyzeStream(stream, this.subscribeGate))
-        await taskQueue.addAll(tasks)
+        const newStreamsPoller = new NewStreamsPoller((newStreams) => {
+            return this.addAnalyzeStreamTasks(newStreams, PRIORITY_HIGH, taskQueue)
+        }, this.config.contracts.theGraphUrl, this.client, NEW_STREAM_POLL_INTERVAL)
+        newStreamsPoller.start()
+        // this resolves when all sortedContractStreams have been analyzed
+        await this.addAnalyzeStreamTasks(sortedContractStreams, PRIORITY_MEDIUM, taskQueue)
+        newStreamsPoller.destroy()
+
+        // wait for possible newStreamsPoller tasks to complete
+        await taskQueue.onIdle() 
+
         await this.cleanupDeletedStreams(contractStreams, databaseStreams)
         logger.info(`Index updated`)
     }
 
-    private async analyzeStream(stream: Stream, subscribeGate: Gate): Promise<void> {
+    private async addAnalyzeStreamTasks(streams: Stream[], priority: number, taskQueue: PQueue): Promise<void> {
+        const tasks = streams.map((stream) => () => this.analyzeStream(stream))
+        await taskQueue.addAll(tasks, { priority })
+    }
+
+    private async analyzeStream(stream: Stream): Promise<void> {
         logger.info(`Analyze: ${stream.id}`)
         const peersByPartition = await this.getPeersByPartition(stream.id)
         const peerIds = uniq(peersByPartition.map((peer) => peer.peerIds).flat())
@@ -86,7 +105,7 @@ export class Crawler {
                 stream.id, 
                 peersByPartition.map((peer) => peer.partition),
                 this.networkNode,
-                subscribeGate,
+                this.subscribeGate,
                 this.config
             )
             : 0
