@@ -1,4 +1,4 @@
-import { MetricsContext, MetricsReport, RateMetric } from '@streamr/utils'
+import { Logger, MetricsContext, MetricsReport, RateMetric } from '@streamr/utils'
 import { Service } from 'typedi'
 import { Gate } from '../Gate'
 import { Events, NetworkNodeFacade } from './NetworkNodeFacade'
@@ -8,6 +8,8 @@ const MAX_MESSAGES_PER_SECOND = 100
 export const MAX_SUBSCRIPTION_COUNT = 20
 const MESSAGE_RATE_POLL_INTERVAL = 30
 const METRICS_NAMESPACE = 'dummy'
+
+const logger = new Logger(module)
 
 /*
  * A gate which is open as long as the node is partially idle, and we are therefore allowed
@@ -55,6 +57,11 @@ export class SubscribeGate extends Gate {
         metricsContext.createReportProducer((report: MetricsReport) => {
             this.messagesPerSecond = report[METRICS_NAMESPACE].messagesPerSecond
             this.updateGate()
+            if (!this.isOpen()) {
+                // TODO move to debug-level or remove?
+                // eslint-disable-next-line max-len
+                logger.info(`Subscribe gate is closed: messagesPerSecond=${this.messagesPerSecond}, latestSubscribeTimestamp=${this.latestSubscribeTimestamp}, subscriptions=${this.node.getSubscriptions().join()}`)
+            }
         }, MESSAGE_RATE_POLL_INTERVAL * 1000, this.abortController.signal)
     }
 
@@ -80,7 +87,7 @@ export class SubscribeGate extends Gate {
             // and we don't know yet how much traffic there is in that stream part
             return false
         }
-        const subscriptionCount = this.node.getSubscriptionCount()
+        const subscriptionCount = this.node.getSubscriptions().length
         if (subscriptionCount === 0) {
             // if there are no longer any subscriptions, we know that there are currently no
             // traffic (we can ignore messagesPerSecond value as it most likely contains

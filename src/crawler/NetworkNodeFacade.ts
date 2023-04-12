@@ -55,8 +55,8 @@ export class NetworkNodeFacade {
         this.node.removeMessageListener(listener)
     }
 
-    getSubscriptionCount(): number {
-        return Array.from(this.node.getStreamParts()).length
+    getSubscriptions(): StreamPartID[] {
+        return Array.from(this.node.getStreamParts())
     }
 
     on<T extends keyof Events>(eventName: T, listener: Events[T]): void {
