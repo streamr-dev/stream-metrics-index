@@ -38,6 +38,9 @@ export class SubscribeGate extends Gate {
         this.node = node
         this.initMessageRateObserver()
         this.initSubscriptionCountObserver()
+        this.node.on('subscribe', () => {
+            this.latestSubscribeTimestamp = Date.now()
+        })
     }
 
     private initMessageRateObserver() {
@@ -58,9 +61,6 @@ export class SubscribeGate extends Gate {
     private initSubscriptionCountObserver() {
         const nodeEvents: (keyof Events)[] = ['subscribe', 'unsubscribe']
         nodeEvents.forEach((eventName) => {
-            if (eventName === 'subscribe') {
-                this.latestSubscribeTimestamp = Date.now()
-            }
             this.node.on(eventName, () => this.updateGate())
         })
     }
