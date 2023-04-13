@@ -2,7 +2,7 @@ import { StreamID, StreamPartIDUtils } from '@streamr/protocol'
 import { Logger } from '@streamr/utils'
 import { difference, sortBy, uniq } from 'lodash'
 import fetch, { Response } from 'node-fetch'
-import PQueue from 'p-queue'
+import pLimit from 'p-limit'
 import { Stream, StreamPermission } from 'streamr-client'
 import { Inject, Service } from 'typedi'
 import { CONFIG_TOKEN, Config } from '../Config'
@@ -16,8 +16,6 @@ import { getMessageRate } from './messageRate'
 
 const MAX_TRACKER_QUERIES_PER_SECOND = 10 // TODO from config file, could fine-tune so that queries are limited separately for each Tracker
 const NEW_STREAM_POLL_INTERVAL = 30 * 60 * 1000 // TODO from config file
-const PRIORITY_MEDIUM = 0
-const PRIORITY_HIGH = 1
 
 const logger = new Logger(module)
 
@@ -63,6 +61,11 @@ export class Crawler {
 
     async updateStreams(): Promise<void> {
 
+        const newStreamsPoller = new NewStreamsPoller((newStreams) => {
+            return Promise.all(newStreams.map((stream) => this.analyzeStream(stream)))
+        }, this.config.contracts.theGraphUrl, this.client, NEW_STREAM_POLL_INTERVAL)
+        newStreamsPoller.start()
+        
         // wrap this.client.getAllStreams() with retry because in streamr-docker-dev environment
         // the graph-node dependency may not be available immediately after the service has
         // been started
@@ -74,25 +77,14 @@ export class Crawler {
         // note that the task execution is primary limited by SubscribeGate, the concurrency setting
         // defined here is less relevant (but MAX_SUBSCRIPTION_COUNT is a good approximation
         // for the worker thread count as streams typically used only one partition)
-        const taskQueue = new PQueue({ concurrency: MAX_SUBSCRIPTION_COUNT })
-        const newStreamsPoller = new NewStreamsPoller((newStreams) => {
-            return this.addAnalyzeStreamTasks(newStreams, PRIORITY_HIGH, taskQueue)
-        }, this.config.contracts.theGraphUrl, this.client, NEW_STREAM_POLL_INTERVAL)
-        newStreamsPoller.start()
-        // this resolves when all sortedContractStreams have been analyzed
-        await this.addAnalyzeStreamTasks(sortedContractStreams, PRIORITY_MEDIUM, taskQueue)
-        newStreamsPoller.destroy()
+        const workedThreadLimit = pLimit(MAX_SUBSCRIPTION_COUNT)
+        await Promise.all(sortedContractStreams.map((stream: Stream) => {
+            return workedThreadLimit(() => this.analyzeStream(stream))
+        }))
 
-        // wait for possible newStreamsPoller tasks to complete
-        await taskQueue.onIdle() 
-
+        await newStreamsPoller.destroy()
         await this.cleanupDeletedStreams(contractStreams, databaseStreams)
         logger.info(`Index updated`)
-    }
-
-    private async addAnalyzeStreamTasks(streams: Stream[], priority: number, taskQueue: PQueue): Promise<void> {
-        const tasks = streams.map((stream) => () => this.analyzeStream(stream))
-        await taskQueue.addAll(tasks, { priority })
     }
 
     private async analyzeStream(stream: Stream): Promise<void> {

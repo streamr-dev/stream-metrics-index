@@ -1,4 +1,4 @@
-import { waitForCondition } from '@streamr/utils'
+import { wait, waitForCondition } from '@streamr/utils'
 import { Server } from 'http'
 import { AddressInfo } from 'net'
 import { StreamID } from 'streamr-client'
@@ -50,6 +50,27 @@ describe('NewStreamsPoller', () => {
         expect(onNewStreamsAvailable.mock.calls[0][0]).toEqual([{ 'id': 'stream-id-2' }, { 'id': 'stream-id-3' }, { 'id': 'stream-id-1' }])
         await waitForCondition(() => onNewStreamsAvailable.mock.calls.length === 2)
         expect(onNewStreamsAvailable.mock.calls[1][0]).toEqual([{ 'id': 'stream-id-4' }])
-        poller.destroy()
+        await poller.destroy()
+    })
+
+    it('destroy waits until callback promise resolves', async () => {
+        let callbackCompleted = false
+        const onNewStreamsAvailable = jest.fn().mockImplementation(async () => {
+            await wait(100)
+            callbackCompleted = true
+        })
+        const client = {
+            getStream: (id: StreamID) => ({ id })
+        }
+        const poller = new NewStreamsPoller(
+            onNewStreamsAvailable,
+            `http://localhost:${(theGraphServer.address() as AddressInfo).port}/path`,
+            client as any,
+            500)
+        poller.start()
+        await waitForCondition(() => onNewStreamsAvailable.mock.calls.length === 1)
+        expect(callbackCompleted).toBe(false)
+        await poller.destroy()
+        expect(callbackCompleted).toBe(true)
     })
 })

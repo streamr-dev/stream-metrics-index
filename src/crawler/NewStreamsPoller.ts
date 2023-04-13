@@ -12,14 +12,20 @@ const logger = new Logger(module)
 
 export class NewStreamsPoller {
 
-    private latestPollTimestamp: number | undefined = undefined  // in seconds
+    private latestPollTimestamp?: number  // in seconds
+    private latestCallbackPromise?: Promise<unknown>
     private readonly abortController = new AbortController()
-    private readonly onNewStreamsAvailable: (streams: Stream[]) => Promise<void>
+    private readonly onNewStreamsAvailable: (streams: Stream[]) => Promise<unknown>
     private readonly theGraphUrl: string
     private readonly client: StreamrClientFacade
     private readonly pollInterval: number
 
-    constructor(onNewStreamsAvailable: (streams: Stream[]) => Promise<void>, theGraphUrl: string, client: StreamrClientFacade, pollInterval: number) {
+    constructor(
+        onNewStreamsAvailable: (streams: Stream[]) => Promise<unknown>,
+        theGraphUrl: string,
+        client: StreamrClientFacade,
+        pollInterval: number
+    ) {
         this.onNewStreamsAvailable = onNewStreamsAvailable
         this.theGraphUrl = theGraphUrl
         this.client = client
@@ -50,7 +56,8 @@ export class NewStreamsPoller {
                             logger.info(`New streams: ${items.length}`)
                             const streams = await Promise.all(items.map((item: any) => this.client.getStream(item.id)))
                             this.latestPollTimestamp = max(items.map((item: any) => item.createdAt))
-                            await this.onNewStreamsAvailable(streams)
+                            this.latestCallbackPromise = this.onNewStreamsAvailable(streams)
+                            await this.latestCallbackPromise
                         }
                     } else {
                         logger.warn(`Error while querying The Graph: ${JSON.stringify(json.errors)}`)
@@ -58,7 +65,7 @@ export class NewStreamsPoller {
                 } catch (e: any) {
                     logger.warn(`Unable to poll new streams: ${e.message}`)
                 }
-            }, this.pollInterval, true, this.abortController.signal)    
+            }, this.pollInterval, true, this.abortController.signal)
         })
     }
 
@@ -75,7 +82,8 @@ export class NewStreamsPoller {
         `
     }
 
-    destroy(): void {
+    async destroy(): Promise<void> {
+        await this.latestCallbackPromise
         this.abortController.abort()
     }
 }
