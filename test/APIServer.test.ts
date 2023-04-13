@@ -121,9 +121,9 @@ describe('APIServer', () => {
                 publisherCount: 20,
                 subscriberCount: null
             })
-            const queryOrderedStreams = async (orderBy: string) => {
+            const queryOrderedStreams = async (orderBy: string, orderDirection: string) => {
                 const streams = await queryAPI(`{
-                    streams(orderBy: ${orderBy}) {
+                    streams(orderBy: ${orderBy} orderDirection: ${orderDirection}) {
                         items {
                             id
                         }
@@ -131,11 +131,11 @@ describe('APIServer', () => {
                 }`, apiPort)
                 return streams.items.map((item: any) => item.id)
             }
-            expect(await queryOrderedStreams('ID')).toEqual(['id-1', 'id-2', 'id-3'])
-            expect(await queryOrderedStreams('PEER_COUNT')).toEqual(['id-3', 'id-2', 'id-1'])
-            expect(await queryOrderedStreams('MESSAGES_PER_SECOND')).toEqual(['id-3', 'id-1', 'id-2'])
-            expect(await queryOrderedStreams('PUBLISHER_COUNT')).toEqual(['id-1', 'id-3', 'id-2'])
-            expect(await queryOrderedStreams('SUBSCRIBER_COUNT')).toEqual(['id-3', 'id-1', 'id-2'])
+            expect(await queryOrderedStreams('ID', 'ASC')).toEqual(['id-1', 'id-2', 'id-3'])
+            expect(await queryOrderedStreams('PEER_COUNT', 'DESC')).toEqual(['id-3', 'id-2', 'id-1'])
+            expect(await queryOrderedStreams('MESSAGES_PER_SECOND', 'DESC')).toEqual(['id-3', 'id-1', 'id-2'])
+            expect(await queryOrderedStreams('PUBLISHER_COUNT', 'DESC')).toEqual(['id-1', 'id-3', 'id-2'])
+            expect(await queryOrderedStreams('SUBSCRIBER_COUNT', 'DESC')).toEqual(['id-3', 'id-1', 'id-2'])
         })
     })
 

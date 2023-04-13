@@ -1,6 +1,6 @@
 import { Arg, Int, Query, Resolver } from 'type-graphql'
 import { Inject, Service } from 'typedi'
-import { OrderBy, Streams, Summary } from '../entities'
+import { OrderBy, OrderDirection, Streams, Summary } from '../entities'
 import { StreamRepository } from '../StreamRepository'
 
 @Resolver()
@@ -21,10 +21,11 @@ export class StreamResolver {
         @Arg("searchTerm", { nullable: true }) searchTerm?: string,
         @Arg("owner", { nullable: true }) owner?: string,
         @Arg("orderBy", () => OrderBy, { nullable: true }) orderBy?: OrderBy,
+        @Arg("orderDirection", () => OrderDirection, { nullable: true }) orderDirection?: OrderDirection,
         @Arg("pageSize", () => Int, { nullable: true }) pageSize?: number,
         @Arg("cursor", { nullable: true }) cursor?: string,
     ): Promise<Streams> {
-        return this.repository.getStreams(ids, searchTerm, owner, orderBy, pageSize, cursor)
+        return this.repository.getStreams(ids, searchTerm, owner, orderBy, orderDirection, pageSize, cursor)
     }
 
     @Query(() => Summary)

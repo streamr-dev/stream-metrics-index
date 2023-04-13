@@ -30,6 +30,15 @@ registerEnumType(OrderBy, {
     name: 'OrderBy'
 })
 
+export enum OrderDirection {
+    ASC = 'ASC',
+    DESC = 'DESC'
+}
+
+registerEnumType(OrderDirection, {
+    name: 'OrderDirection'
+})
+
 @ObjectType()
 export class Streams {
     @Field(() => [Stream])

@@ -2,7 +2,7 @@ import { Logger } from '@streamr/utils'
 import { Connection, createConnection, RowDataPacket } from 'mysql2/promise'
 import { Inject, Service } from 'typedi'
 import { Config, CONFIG_TOKEN } from './Config'
-import { OrderBy, Stream, Streams, Summary } from './entities'
+import { OrderBy, OrderDirection, Stream, Streams, Summary } from './entities'
 import { StreamrClientFacade } from './StreamrClientFacade'
 import { collect } from './utils'
 
@@ -43,8 +43,16 @@ export class StreamRepository {
         })
     }
 
-    async getStreams(ids?: string[], searchTerm?: string, owner?: string, orderBy?: OrderBy, pageSize?: number, cursor?: string): Promise<Streams> {
-        logger.info('Query: getStreams %o', { ids, searchTerm, owner, orderBy, pageSize, cursor })
+    async getStreams(
+        ids?: string[],
+        searchTerm?: string,
+        owner?: string,
+        orderBy?: OrderBy,
+        orderDirection?: OrderDirection,
+        pageSize?: number,
+        cursor?: string
+    ): Promise<Streams> {
+        logger.info('Query: getStreams %o', { ids, searchTerm, owner, orderBy, orderDirection, pageSize, cursor })
         const whereClauses = []
         const params = []
         if (ids !== undefined) {
@@ -64,7 +72,7 @@ export class StreamRepository {
             const streamIds = streams.map((s) => s.id)
             params.push(streamIds)
         }
-        const orderByExpression = StreamRepository.formOrderByExpression(orderBy ?? OrderBy.ID)
+        const orderByExpression = StreamRepository.formOrderByExpression(orderBy ?? OrderBy.ID, orderDirection ?? OrderDirection.ASC)
         const sql = `
             SELECT id, description, peerCount, messagesPerSecond, publisherCount, subscriberCount 
             FROM streams
@@ -88,24 +96,39 @@ export class StreamRepository {
         }
     }
 
-    private static formOrderByExpression(orderBy: OrderBy) {
-        const stableSortSuffix = ', id'
-        switch (orderBy) {
-            case OrderBy.ID:
-                return 'id'
-            case OrderBy.DESCRIPTION:
-                return `description IS NULL, description ${stableSortSuffix}`
-            case OrderBy.PEER_COUNT:
-                return `peerCount DESC ${stableSortSuffix}`
-            case OrderBy.MESSAGES_PER_SECOND:
-                return `messagesPerSecond DESC ${stableSortSuffix}`
-            case OrderBy.PUBLISHER_COUNT:
-                return `publisherCount IS NULL DESC, publisherCount DESC ${stableSortSuffix}`
-            case OrderBy.SUBSCRIBER_COUNT:
-                return `subscriberCount IS NULL DESC, subscriberCount DESC ${stableSortSuffix}`
-            default:
-                throw new Error('assertion failed')
+    private static formOrderByExpression(orderBy: OrderBy, orderDirection: OrderDirection) {
+        const getFieldName = () => {
+            switch (orderBy) {
+                case OrderBy.ID:
+                    return 'id'
+                case OrderBy.DESCRIPTION:
+                    return 'description'
+                case OrderBy.PEER_COUNT:
+                    return 'peerCount'
+                case OrderBy.MESSAGES_PER_SECOND:
+                    return 'messagesPerSecond'
+                case OrderBy.PUBLISHER_COUNT:
+                    return 'publisherCount'
+                case OrderBy.SUBSCRIBER_COUNT:
+                    return 'subscriberCount'
+                default:
+                    throw new Error('assertion failed')
+            }
         }
+        const getDirectionSql = () => {
+            switch (orderDirection) {
+                case OrderDirection.ASC:
+                    return 'ASC'
+                case OrderDirection.DESC:
+                    return 'DESC'
+                default:
+                    throw new Error('assertion failed')
+            }
+        }
+        const fieldName = getFieldName()
+        const directionSql = getDirectionSql()
+        const stableSortSuffix = ', id'
+        return `${fieldName} IS NULL ${directionSql}, ${fieldName} ${directionSql} ${stableSortSuffix}`
     }
 
     async getSummary(): Promise<Summary> {
