@@ -89,19 +89,20 @@ export class StreamRepository {
     }
 
     private static formOrderByExpression(orderBy: OrderBy) {
+        const stableSortSuffix = ', id'
         switch (orderBy) {
             case OrderBy.ID:
                 return 'id'
             case OrderBy.DESCRIPTION:
-                return 'description IS NULL, description'
+                return `description IS NULL, description ${stableSortSuffix}`
             case OrderBy.PEER_COUNT:
-                return 'peerCount DESC'
+                return `peerCount DESC ${stableSortSuffix}`
             case OrderBy.MESSAGES_PER_SECOND:
-                return 'messagesPerSecond DESC'
+                return `messagesPerSecond DESC ${stableSortSuffix}`
             case OrderBy.PUBLISHER_COUNT:
-                return 'publisherCount IS NULL DESC, publisherCount DESC'
+                return `publisherCount IS NULL DESC, publisherCount DESC ${stableSortSuffix}`
             case OrderBy.SUBSCRIBER_COUNT:
-                return 'subscriberCount IS NULL DESC, subscriberCount DESC'
+                return `subscriberCount IS NULL DESC, subscriberCount DESC ${stableSortSuffix}`
             default:
                 throw new Error('assertion failed')
         }
