@@ -39,6 +39,7 @@ export class NewStreamsPoller {
         this.latestPollTimestamp = Math.floor(Date.now() / 1000)
         setImmediate(async () => {
             await scheduleAtInterval(async () => {
+                logger.info('Poll new streams')
                 try {
                     // TODO could support pagination: currently just the first page (max 100 streams)
                     const query = this.createQuery()
