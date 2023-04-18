@@ -89,29 +89,33 @@ export class Crawler {
 
     private async analyzeStream(stream: Stream): Promise<void> {
         logger.info(`Analyze: ${stream.id}`)
-        const peersByPartition = await this.getPeersByPartition(stream.id)
-        const peerIds = uniq(peersByPartition.map((peer) => peer.peerIds).flat())
-        const peerCount = peerIds.length
-        const messagesPerSecond = (peerCount > 0) 
-            ? await getMessageRate(
-                stream.id, 
-                peersByPartition.map((peer) => peer.partition),
-                this.networkNode,
-                this.subscribeGate,
-                this.config
-            )
-            : 0
-        const publisherCount = await this.client.getPublisherOrSubscriberCount(stream.id, StreamPermission.PUBLISH)
-        const subscriberCount = await this.client.getPublisherOrSubscriberCount(stream.id, StreamPermission.SUBSCRIBE)
-        logger.info('Replace: %s', stream.id)
-        await this.database.replaceStream({
-            id: stream.id,
-            description: stream.getMetadata().description ?? null,
-            peerCount,
-            messagesPerSecond,
-            publisherCount,
-            subscriberCount
-        })
+        try {
+            const peersByPartition = await this.getPeersByPartition(stream.id)
+            const peerIds = uniq(peersByPartition.map((peer) => peer.peerIds).flat())
+            const peerCount = peerIds.length
+            const messagesPerSecond = (peerCount > 0) 
+                ? await getMessageRate(
+                    stream.id, 
+                    peersByPartition.map((peer) => peer.partition),
+                    this.networkNode,
+                    this.subscribeGate,
+                    this.config
+                )
+                : 0
+            const publisherCount = await this.client.getPublisherOrSubscriberCount(stream.id, StreamPermission.PUBLISH)
+            const subscriberCount = await this.client.getPublisherOrSubscriberCount(stream.id, StreamPermission.SUBSCRIBE)
+            logger.info('Replace: %s', stream.id)
+            await this.database.replaceStream({
+                id: stream.id,
+                description: stream.getMetadata().description ?? null,
+                peerCount,
+                messagesPerSecond,
+                publisherCount,
+                subscriberCount
+            })
+        } catch (e: any) {
+            logger.error(`Failed to analyze: ${stream.id}`, e)
+        }
     }
 
     private async getPeersByPartition(streamId: StreamID): Promise<{ partition: number, peerIds: string[] }[]> {

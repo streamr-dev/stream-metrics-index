@@ -60,10 +60,10 @@ export class NewStreamsPoller {
                             await this.latestCallbackPromise
                         }
                     } else {
-                        logger.warn(`Error while querying The Graph: ${JSON.stringify(json.errors)}`)
+                        logger.error(`Error while querying The Graph: ${JSON.stringify(json.errors)}`)
                     }
                 } catch (e: any) {
-                    logger.warn(`Unable to poll new streams: ${e.message}`)
+                    logger.error('Unable to poll new streams', e)
                 }
             }, this.pollInterval, true, this.abortController.signal)
         })
