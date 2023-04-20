@@ -71,7 +71,7 @@ export class Crawler {
         // been started
         const contractStreams = await retry(() => collect(this.client.getAllStreams()), 'Query streams')
         const databaseStreams = await this.database.getAllStreams()
-        logger.info(`Start: contractStreams=${contractStreams.length}, databaseStreams=${databaseStreams.length}`)
+        logger.info('Start', { contractStreams: contractStreams.length, databaseStreams: databaseStreams.length })
         const sortedContractStreams = sortBy(contractStreams, getCrawlOrderComparator(databaseStreams))
 
         // note that the task execution is primary limited by SubscribeGate, the concurrency setting
@@ -104,7 +104,7 @@ export class Crawler {
                 : 0
             const publisherCount = await this.client.getPublisherOrSubscriberCount(stream.id, StreamPermission.PUBLISH)
             const subscriberCount = await this.client.getPublisherOrSubscriberCount(stream.id, StreamPermission.SUBSCRIBE)
-            logger.info('Replace: %s', stream.id)
+            logger.info(`Replace: ${stream.id}`)
             await this.database.replaceStream({
                 id: stream.id,
                 description: stream.getMetadata().description ?? null,
@@ -139,7 +139,7 @@ export class Crawler {
         const databaseStreamIds = databaseStreams.map((s) => s.id)
         const removedStreamsIds = difference(databaseStreamIds, contractStreamIds)
         for (const streamId of removedStreamsIds) {
-            logger.info('Delete: %s', streamId)
+            logger.info(`Delete: ${streamId}`)
             await this.database.deleteStream(streamId)
         }
     }

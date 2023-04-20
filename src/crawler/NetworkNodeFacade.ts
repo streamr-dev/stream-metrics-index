@@ -22,7 +22,7 @@ export class NetworkNodeFacade {
         @Inject(CONFIG_TOKEN) config: Config
     ) {
         const nodeId = `${config.networkNode.id}#${Date.now()}`
-        logger.info('Network node: %s', nodeId)
+        logger.info(`Network node: ${nodeId}`)
         this.node = createNetworkNode({
             ...config.networkNode,
             trackers: config.trackers,

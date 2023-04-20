@@ -52,7 +52,7 @@ export class StreamRepository {
         pageSize?: number,
         cursor?: string
     ): Promise<Streams> {
-        logger.info('Query: getStreams %o', { ids, searchTerm, owner, orderBy, orderDirection, pageSize, cursor })
+        logger.info('Query: getStreams', { ids, searchTerm, owner, orderBy, orderDirection, pageSize, cursor })
         const whereClauses = []
         const params = []
         if (ids !== undefined) {
