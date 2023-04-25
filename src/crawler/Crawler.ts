@@ -3,19 +3,19 @@ import { Logger } from '@streamr/utils'
 import { difference, sortBy, uniq } from 'lodash'
 import fetch, { Response } from 'node-fetch'
 import pLimit from 'p-limit'
-import { Stream, StreamPermission } from 'streamr-client'
+import { Stream, StreamCreationEvent, StreamMetadata, StreamPermission } from 'streamr-client'
 import { Inject, Service } from 'typedi'
 import { CONFIG_TOKEN, Config } from '../Config'
 import { StreamRepository } from '../StreamRepository'
 import { StreamrClientFacade } from '../StreamrClientFacade'
 import { collect, retry, withThrottling } from '../utils'
 import { NetworkNodeFacade } from './NetworkNodeFacade'
-import { NewStreamsPoller } from './NewStreamsPoller'
 import { MAX_SUBSCRIPTION_COUNT, SubscribeGate } from './SubscribeGate'
 import { getMessageRate } from './messageRate'
+import { wait } from '@streamr/utils'
 
 const MAX_TRACKER_QUERIES_PER_SECOND = 10 // TODO from config file, could fine-tune so that queries are limited separately for each Tracker
-const NEW_STREAM_POLL_INTERVAL = 30 * 60 * 1000 // TODO from config file
+const NEW_STREAM_ANALYSIS_DELAY = 60 * 1000 // TODO from config file
 
 const logger = new Logger(module)
 
@@ -41,6 +41,7 @@ export class Crawler {
     private readonly client: StreamrClientFacade
     private readonly config: Config
     private readonly fetchTrackerTopology: (trackerUrl: string, streamId: StreamID) => Promise<Response>
+    private readonly onStreamCreated: (payload: StreamCreationEvent) => Promise<void>
 
     constructor(
         @Inject() networkNode: NetworkNodeFacade,
@@ -57,21 +58,48 @@ export class Crawler {
         this.fetchTrackerTopology = withThrottling((trackerUrl: string, streamId: StreamID) => {
             return fetch(`${trackerUrl}/topology/${encodeURIComponent(streamId)}`)
         }, MAX_TRACKER_QUERIES_PER_SECOND)
+        this.onStreamCreated = async (payload: StreamCreationEvent) => {
+            logger.info(`New stream: ${payload.streamId}`)
+            // first write some data quickly to the database without analyzing the stream
+            // - assume no peers and no traffic
+            // - assume that no explicit permissions have been granted yet (the creator
+            //   is the only publisher and subscriber
+            await this.database.replaceStream({
+                id: payload.streamId,
+                description: payload.metadata.description ?? null,
+                peerCount: 0,
+                messagesPerSecond: 0,
+                publisherCount: 1,
+                subscriberCount: 1
+            })
+            // we wait some time so that The Graph has been indexed the new stream
+            // and it can provider valid publisher and subscriber counts to us
+            await wait(NEW_STREAM_ANALYSIS_DELAY)
+            await this.analyzeStream(payload.streamId, payload.metadata)
+        }
     }
 
-    async updateStreams(): Promise<void> {
+    start(iterationCount: number | undefined = undefined): void {
+        setImmediate(async () => {
+            this.client.on('createStream', this.onStreamCreated)
+            // eslint-disable-next-line no-constant-condition
+            let iterationIndex = 0
+            while ((iterationCount === undefined) || (iterationIndex < iterationCount)) {
+                await this.crawlContractStreams()
+                await wait(this.config.crawler.iterationDelay)
+                iterationIndex++
+            }
+            this.client.off('createStream', this.onStreamCreated)
+        })
+    }
 
-        const newStreamsPoller = new NewStreamsPoller((newStreams) => {
-            return Promise.all(newStreams.map((stream) => this.analyzeStream(stream)))
-        }, this.config.contracts.theGraphUrl, this.client, NEW_STREAM_POLL_INTERVAL)
-        newStreamsPoller.start()
-        
+    private async crawlContractStreams(): Promise<void> {
         // wrap this.client.getAllStreams() with retry because in streamr-docker-dev environment
         // the graph-node dependency may not be available immediately after the service has
         // been started
         const contractStreams = await retry(() => collect(this.client.getAllStreams()), 'Query streams')
         const databaseStreams = await this.database.getAllStreams()
-        logger.info('Start', { contractStreams: contractStreams.length, databaseStreams: databaseStreams.length })
+        logger.info('Crawling', { contractStreams: contractStreams.length, databaseStreams: databaseStreams.length })
         const sortedContractStreams = sortBy(contractStreams, getCrawlOrderComparator(databaseStreams))
 
         // note that the task execution is primary limited by SubscribeGate, the concurrency setting
@@ -79,42 +107,41 @@ export class Crawler {
         // for the worker thread count as streams typically used only one partition)
         const workedThreadLimit = pLimit(MAX_SUBSCRIPTION_COUNT)
         await Promise.all(sortedContractStreams.map((stream: Stream) => {
-            return workedThreadLimit(() => this.analyzeStream(stream))
+            return workedThreadLimit(() => this.analyzeStream(stream.id, stream.getMetadata()))
         }))
 
-        await newStreamsPoller.destroy()
         await this.cleanupDeletedStreams(contractStreams, databaseStreams)
-        logger.info(`Index updated`)
+        logger.info(`Crawled`)
     }
 
-    private async analyzeStream(stream: Stream): Promise<void> {
-        logger.info(`Analyze: ${stream.id}`)
+    private async analyzeStream(id: StreamID, metadata: StreamMetadata): Promise<void> {
+        logger.info(`Analyze: ${id}`)
         try {
-            const peersByPartition = await this.getPeersByPartition(stream.id)
+            const peersByPartition = await this.getPeersByPartition(id)
             const peerIds = uniq(peersByPartition.map((peer) => peer.peerIds).flat())
             const peerCount = peerIds.length
-            const messagesPerSecond = (peerCount > 0) 
+            const messagesPerSecond = (peerCount > 0)
                 ? await getMessageRate(
-                    stream.id, 
+                    id, 
                     peersByPartition.map((peer) => peer.partition),
                     this.networkNode,
                     this.subscribeGate,
                     this.config
                 )
                 : 0
-            const publisherCount = await this.client.getPublisherOrSubscriberCount(stream.id, StreamPermission.PUBLISH)
-            const subscriberCount = await this.client.getPublisherOrSubscriberCount(stream.id, StreamPermission.SUBSCRIBE)
-            logger.info(`Replace: ${stream.id}`)
+            const publisherCount = await this.client.getPublisherOrSubscriberCount(id, StreamPermission.PUBLISH)
+            const subscriberCount = await this.client.getPublisherOrSubscriberCount(id, StreamPermission.SUBSCRIBE)
+            logger.info(`Replace: ${id}`)
             await this.database.replaceStream({
-                id: stream.id,
-                description: stream.getMetadata().description ?? null,
+                id,
+                description: metadata.description ?? null,
                 peerCount,
                 messagesPerSecond,
                 publisherCount,
                 subscriberCount
             })
         } catch (e: any) {
-            logger.error(`Failed to analyze: ${stream.id}`, e)
+            logger.error(`Failed to analyze: ${id}`, e)
         }
     }
 

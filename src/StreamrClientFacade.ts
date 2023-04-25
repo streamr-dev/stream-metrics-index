@@ -1,4 +1,4 @@
-import StreamrClient, { Stream, StreamID, StreamPermission } from 'streamr-client'
+import StreamrClient, { Stream, StreamCreationEvent, StreamPermission } from 'streamr-client'
 import { Inject, Service } from 'typedi'
 import { CONFIG_TOKEN, Config } from './Config'
 import { count } from './utils'
@@ -32,10 +32,6 @@ export class StreamrClientFacade {
         })
     }
 
-    getStream(id: StreamID): Promise<Stream> {
-        return this.client.getStream(id)
-    }
-
     async getPublisherOrSubscriberCount(streamId: string, permission: StreamPermission.PUBLISH | StreamPermission.SUBSCRIBE): Promise<number | null> {
         const isPublic = await this.client.hasPermission({
             streamId,
@@ -55,6 +51,14 @@ export class StreamrClientFacade {
             }
             return count(items)
         }
+    }
+
+    on(name: 'createStream', listener: (payload: StreamCreationEvent) => void): void {
+        this.client.on(name, listener)
+    }
+
+    off(name: 'createStream', listener: (payload: StreamCreationEvent) => void): void {
+        this.client.off(name, listener)
     }
 
     async destroy(): Promise<void> {

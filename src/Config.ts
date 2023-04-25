@@ -24,8 +24,10 @@ export interface Config {
     trackers: TrackerRegistryRecord[]
     networkNode: Omit<NetworkNodeOptions, | 'trackers' | 'metricsContext'>
     contracts: MarkRequired<
-        Pick<Exclude<StreamrClientConfig['contracts'], undefined>, 'streamRegistryChainAddress' | 'streamRegistryChainRPCs' | 'theGraphUrl'>,
-        'theGraphUrl'>
+        Pick<
+            Exclude<StreamrClientConfig['contracts'], undefined>, 
+            'streamRegistryChainAddress' | 'streamRegistryChainRPCs' | 'theGraphUrl' | 'pollInterval'
+        >, 'theGraphUrl'>
 }
 
 export const readFromFile = async (fileName: string): Promise<Config> => {

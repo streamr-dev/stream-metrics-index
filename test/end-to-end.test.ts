@@ -2,6 +2,7 @@ import 'reflect-metadata'
 
 import { TEST_CONFIG } from '@streamr/network-node'
 import StreamrClient, { CONFIG_TEST, StreamPermission, TrackerRegistryRecord } from 'streamr-client'
+import { waitForCondition } from '@streamr/utils'
 import Container from 'typedi'
 import { APIServer } from '../src/api/APIServer'
 import { CONFIG_TOKEN } from '../src/Config'
@@ -116,8 +117,10 @@ describe('end-to-end', () => {
         const iterator = subscription[Symbol.asyncIterator]()
         await nextValue(iterator)
         crawler = Container.get(Crawler)
-        await crawler.updateStreams()
+        crawler.start(1)
         clearTimeout(publisherTimer)
+
+        await waitForCondition(async () => (await getStream(streamId, apiPort)) !== undefined)
 
         const stream = (await getStream(streamId, apiPort))!
         expect(stream.description).toBe('mock-description')

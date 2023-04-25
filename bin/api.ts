@@ -8,7 +8,8 @@ import { CONFIG_TOKEN, readFromFile } from '../src/Config'
 
 const main = async () => {
     const configFile = process.argv[2]
-    Container.set(CONFIG_TOKEN, await readFromFile(configFile))
+    const config = await readFromFile(configFile)
+    Container.set(CONFIG_TOKEN, config)
     const apiServer = Container.get(APIServer)
     apiServer.start()
 }

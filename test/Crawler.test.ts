@@ -1,6 +1,7 @@
 import 'reflect-metadata'
 
 import { TEST_CONFIG } from '@streamr/network-node'
+import { wait, waitForCondition } from '@streamr/utils'
 import { once } from 'events'
 import express, { Request, Response } from 'express'
 import { Server } from 'http'
@@ -14,18 +15,21 @@ import { NetworkNodeFacade } from '../src/crawler/NetworkNodeFacade'
 import { SubscribeGate } from '../src/crawler/SubscribeGate'
 import { createDatabase, createDatabaseConnection } from '../src/utils'
 import { TEST_DATABASE_NAME, dropTestDatabaseIfExists, startTheGraphServer } from './utils'
+import { RowDataPacket } from 'mysql2'
 
-const TOPOLOGIES = [{
-    'stream-id#0': { 'node-1': [] },
-    'stream-id#3': { 'node-2': [], 'node-3': [] }
-}, {
-    'stream-id#1': { 'node-3': [], 'node-4': [], 'node-5': [] }
-}, {
-}]
+const createTopologies = (streamId: string) => {
+    return [{
+        [`${streamId}#0`]: { 'node-1': [] },
+        [`${streamId}#3`]: { 'node-2': [], 'node-3': [] }
+    }, {
+        [`${streamId}#1`]: { 'node-3': [], 'node-4': [], 'node-5': [] }
+    }, {
+    }]
+} 
 
-const createMockMessage = (): Partial<StreamMessage> => {
+const createMockMessage = (streamId: string): Partial<StreamMessage> => {
     return {
-        getStreamId: () => 'stream-id' as any
+        getStreamId: () => streamId as any
     }
 }
 
@@ -51,9 +55,11 @@ describe('Crawler', () => {
     let trackers: { port: number, destroy: () => Promise<void> }[]
     let config: any
     let theGraphServer: Server
+    let streamId: string
 
     beforeEach(async () => {
-        trackers = await Promise.all(TOPOLOGIES.map((topology) => startFakeTracker(topology)))
+        streamId = `stream-id-${Date.now()}`
+        trackers = await Promise.all(createTopologies(streamId).map((topology) => startFakeTracker(topology)))
         theGraphServer = await startTheGraphServer([])
         config = {
             crawler: {
@@ -81,7 +87,7 @@ describe('Crawler', () => {
         Container.set(CONFIG_TOKEN, config)
         Container.set(StreamrClientFacade, {
             getAllStreams: () => [{ 
-                id: 'stream-id',
+                id: streamId,
                 getMetadata: () => ({ 
                     description:  'mock-description'
                 })
@@ -92,7 +98,11 @@ describe('Crawler', () => {
                 } else if (permission === StreamPermission.SUBSCRIBE) {
                     return 20
                 }
-            }
+            },
+            // eslint-disable-next-line @typescript-eslint/no-empty-function
+            on: () => {},
+            // eslint-disable-next-line @typescript-eslint/no-empty-function
+            off: () => {}
         })
         Container.set(NetworkNodeFacade, {
             // eslint-disable-next-line @typescript-eslint/no-empty-function
@@ -101,9 +111,9 @@ describe('Crawler', () => {
             unsubscribe: () => {},
             addMessageListener: (onMessage: (msg: StreamMessage) => void) => {
                 setImmediate(() => {
-                    onMessage(createMockMessage() as any)
-                    onMessage(createMockMessage() as any)
-                    onMessage(createMockMessage() as any)
+                    onMessage(createMockMessage(streamId) as any)
+                    onMessage(createMockMessage(streamId) as any)
+                    onMessage(createMockMessage(streamId) as any)
                 })
             },
             // eslint-disable-next-line @typescript-eslint/no-empty-function
@@ -122,11 +132,20 @@ describe('Crawler', () => {
     })
     
     it('happy path', async () => {
-        await crawler.updateStreams()
+        crawler.start(1)
         const connection = await createDatabaseConnection(config.database)
-        const streams = await connection.query('select * from streams')
-        expect(streams[0]).toMatchObject([{
-            id: 'stream-id',
+
+        const query = `select * from streams where id="${streamId}"`
+        await waitForCondition(async () => {
+            const streams = (await connection.query(query))[0] as RowDataPacket
+            return streams.length > 0
+        }, 10 * 1000)
+
+        await wait(15000)
+
+        const streams = (await connection.query(query))[0]
+        expect(streams).toMatchObject([{
+            id: streamId,
             description: 'mock-description',
             peerCount: 5,
             messagesPerSecond: '1.50',
