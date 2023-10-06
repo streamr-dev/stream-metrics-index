@@ -32,6 +32,8 @@ const getCrawlOrderComparator = (databaseStreams: { id: string, crawlTimestamp: 
     }
 }
 
+const RECOVERY_DELAY = 5 * 60 * 1000  // TODO from config
+
 @Service()
 export class Crawler {
 
@@ -85,7 +87,12 @@ export class Crawler {
             // eslint-disable-next-line no-constant-condition
             let iterationIndex = 0
             while ((iterationCount === undefined) || (iterationIndex < iterationCount)) {
-                await this.crawlContractStreams()
+                try {
+                    await this.crawlContractStreams()
+                } catch (e) {
+                    logger.error('Error', { error: e })
+                    await wait(RECOVERY_DELAY)
+                }
                 await wait(this.config.crawler.iterationDelay)
                 iterationIndex++
             }
