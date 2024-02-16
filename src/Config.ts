@@ -11,7 +11,7 @@ export interface Config {
     }
     crawler: {
         subscribeDuration: number
-        newStreamAnalysisDelay: number  // TODO add value for this in the production config
+        newStreamAnalysisDelay: number
         iterationDelay: number
     }
     database: {
