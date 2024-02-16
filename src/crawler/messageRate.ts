@@ -7,6 +7,8 @@ import { NetworkNodeFacade } from './NetworkNodeFacade'
 
 const logger = new Logger(module)
 
+// If there are many partitions, we approximate the message rate of a stream by analyzing only some of the partitions.
+// We assume that traffic levels in each partitions are be quite similar.
 export const MAX_PARTITION_COUNT = 10
 
 export const getMessageRate = async (
