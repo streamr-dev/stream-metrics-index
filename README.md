@@ -29,7 +29,7 @@ The GraphQL endpoint is available e.g. at <http://localhost:4001/api>.
 Start dependencies:
 
 ```
-streamr-docker-dev start mysql graph-deploy-streamregistry-subgraph trackers
+streamr-docker-dev start mysql dev-chain-fast deploy-network-subgraphs-fastchain
 ```
 
 ```

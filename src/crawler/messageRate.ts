@@ -1,10 +1,9 @@
 import { StreamID, toStreamPartID } from '@streamr/protocol'
-import { Logger, wait } from '@streamr/utils'
+import { Gate, Logger, wait } from '@streamr/utils'
 import { sampleSize } from 'lodash'
 import { StreamMessage } from 'streamr-client'
 import { Config } from '../Config'
 import { NetworkNodeFacade } from './NetworkNodeFacade'
-import { Gate } from '../Gate'
 
 const logger = new Logger(module)
 
@@ -29,11 +28,17 @@ export const getMessageRate = async (
         await subscibeGate.waitUntilOpen()
         const streamPartId = toStreamPartID(streamId, partition)
         logger.info(`Listen: ${streamPartId}`)
-        node.subscribe(streamPartId)
+        try {
+            await node.subscribe(streamPartId)
+        } catch (err) {
+            logger.warn(`Unable to subscribe to ${streamPartId}`, { err, samplePartitions, activePartitions })
+        }
         await wait(config.crawler.subscribeDuration)
-        node.unsubscribe(streamPartId)
+        await node.unsubscribe(streamPartId)
     }
     node.removeMessageListener(messageListener)
     const partitionMultiplier = activePartitions.length / samplePartitions.length
-    return messageCount / (config.crawler.subscribeDuration / 1000) * partitionMultiplier
+    const rate = messageCount / (config.crawler.subscribeDuration / 1000) * partitionMultiplier
+    logger.info(`Message rate ${streamId}: ${rate}`, { messageCount, samplePartitions, activePartitions })
+    return rate
 }

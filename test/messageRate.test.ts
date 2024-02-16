@@ -1,7 +1,7 @@
 import { StreamMessage, toStreamID, toStreamPartID } from '@streamr/protocol'
+import { Gate } from '@streamr/utils'
 import { range } from 'lodash'
-import { getMessageRate, MAX_PARTITION_COUNT } from '../src/crawler/messageRate'
-import { Gate } from '../src/Gate'
+import { MAX_PARTITION_COUNT, getMessageRate } from '../src/crawler/messageRate'
 
 const STREAM_ID = toStreamID('stream-id')
 

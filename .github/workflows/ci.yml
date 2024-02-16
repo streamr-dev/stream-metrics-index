@@ -24,7 +24,7 @@ jobs:
       - run: npm run build
       - uses: streamr-dev/streamr-docker-dev-action@v1.0.1
         with:
-          services-to-start: mysql graph-deploy-streamregistry-subgraph trackers
+          services-to-start: mysql dev-chain-fast deploy-network-subgraphs-fastchain
       - run: npm run test
   docker:
     needs: test
