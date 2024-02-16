@@ -55,8 +55,8 @@ describe('Crawler', () => {
                 )
             })
         }
-        const networkTopology = await crawlTopology(localNode as any, [nodes[0], nodes[5]], (response: NodeInfo) => response.controlLayer!.neighbors)
+        const topology = await crawlTopology(localNode as any, [nodes[0], nodes[5]], (response: NodeInfo) => response.controlLayer!.neighbors, '')
         expect(localNode.fetchNodeInfo).toHaveBeenCalledTimes(nodes.length)
-        expect([...networkTopology.get(STREAM_PART_ID)!]).toIncludeSameMembers(nodes.map((n) => getNodeIdFromPeerDescriptor(n)))
+        expect([...topology.getPeers(STREAM_PART_ID)!]).toIncludeSameMembers(nodes.map((n) => getNodeIdFromPeerDescriptor(n)))
     })
 })

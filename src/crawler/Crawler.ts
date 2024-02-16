@@ -1,5 +1,5 @@
 import { PeerDescriptor, getNodeIdFromPeerDescriptor } from '@streamr/dht'
-import { StreamID, StreamPartID, StreamPartIDUtils, toStreamPartID } from '@streamr/protocol'
+import { StreamID, toStreamPartID } from '@streamr/protocol'
 import { NodeInfo } from '@streamr/trackerless-network'
 import { Logger, binaryToHex, wait } from '@streamr/utils'
 import { difference, range, sortBy } from 'lodash'
@@ -12,6 +12,7 @@ import { StreamrClientFacade } from '../StreamrClientFacade'
 import { collect, retry } from '../utils'
 import { NetworkNodeFacade } from './NetworkNodeFacade'
 import { MAX_SUBSCRIPTION_COUNT, SubscribeGate } from './SubscribeGate'
+import { Topology } from './Topology'
 import { getMessageRate } from './messageRate'
 
 const logger = new Logger(module)
@@ -65,8 +66,8 @@ export const crawlTopology = async (
     localNode: NetworkNodeFacade,
     entryPoints: PeerDescriptor[],
     getNeighbors: (nodeInfo: NodeInfo) => PeerDescriptor[],
-    logSummary = true
-): Promise<Map<StreamPartID, Set<DhtAddress>>> => {
+    runId: string
+): Promise<Topology> => {
     const nodeInfos: Map<DhtAddress, NodeInfo> = new Map()
     const errorNodes: Set<DhtAddress> = new Set()
     const processNode = async (peerDescriptor: PeerDescriptor): Promise<void> => {
@@ -76,37 +77,23 @@ export const crawlTopology = async (
             return
         }
         try {
-            logger.info(`Querying ${nodeId}`)
+            logger.info(`Querying ${nodeId}`, { runId })
             const info = await localNode.fetchNodeInfo(peerDescriptor)
             nodeInfos.set(nodeId, info)
-            logger.info(`Queried ${nodeId}`, { info: createNodeInfoLogOutput(info) })
+            logger.info(`Queried ${nodeId}`, { info: createNodeInfoLogOutput(info), runId })
             for (const node of getNeighbors(info)) {
                 await processNode(node)
             }
         } catch (err) {
             errorNodes.add(nodeId)
-            logger.warn(`Query failed ${nodeId}`, { peerDescriptor: createPeerDescriptorLogOutput(peerDescriptor), error: err })
+            logger.warn(`Query failed ${nodeId}`, { peerDescriptor: createPeerDescriptorLogOutput(peerDescriptor), error: err, runId })
         }
     }
     for (const node of entryPoints) {
         await processNode(node)
     }
-    const peers: Map<StreamPartID, Set<DhtAddress>> = new Map()
-    for (const nodeInfo of nodeInfos.values()) {
-        for (const streamPart of nodeInfo.streamPartitions) {
-            const streamPartId = streamPart.id as StreamPartID
-            const nodeIds = peers.get(streamPartId) ?? new Set()
-            nodeIds.add(getNodeIdFromPeerDescriptor(nodeInfo.peerDescriptor!))
-            for (const neighbor of streamPart.deliveryLayerNeighbors) {
-                nodeIds.add(getNodeIdFromPeerDescriptor(neighbor))
-            }
-            peers.set(streamPartId, nodeIds)
-        }
-    }
-    if (logSummary) {
-        logger.info(`Topology summary: nodeCount=${nodeInfos.size}, errors=${errorNodes.size}, streamPartCount=${peers.size}`)
-    }
-    return peers
+    logger.info(`Topology: nodeCount=${nodeInfos.size}, errors=${errorNodes.size}`, { runId })
+    return new Topology([...nodeInfos.values()])
 }
 
 @Service()
@@ -140,12 +127,13 @@ export class Crawler {
         // eslint-disable-next-line no-constant-condition
         while (true) {
             try {
-                const networkTopology = await crawlTopology(
+                const topology = await crawlTopology(
                     networkNodeFacade,
                     this.client.getEntryPoints(),
-                    (nodeInfo: NodeInfo) => nodeInfo.controlLayer!.neighbors
+                    (nodeInfo: NodeInfo) => nodeInfo.controlLayer!.neighbors,
+                    `full-${Date.now()}`
                 )
-                await this.analyzeContractStreams(networkTopology, this.subscribeGate)
+                await this.analyzeContractStreams(topology, this.subscribeGate)
             } catch (e) {
                 logger.error('Error', { error: e })
                 await wait(RECOVERY_DELAY)
@@ -161,7 +149,7 @@ export class Crawler {
     }
 
     private async analyzeContractStreams(
-        networkTopology: Map<StreamPartID, Set<DhtAddress>>,
+        topology: Topology,
         subscribeGate: SubscribeGate
     ): Promise<void> {
         // wrap this.client.getAllStreams() with retry because in streamr-docker-dev environment
@@ -178,7 +166,7 @@ export class Crawler {
         const workedThreadLimit = pLimit(MAX_SUBSCRIPTION_COUNT)
         await Promise.all(sortedContractStreams.map((stream: Stream) => {
             return workedThreadLimit(async () => {
-                await this.analyzeStream(stream.id, stream.getMetadata(), networkTopology, subscribeGate)
+                await this.analyzeStream(stream.id, stream.getMetadata(), topology, subscribeGate)
             })
         }))
 
@@ -188,16 +176,13 @@ export class Crawler {
     private async analyzeStream(
         id: StreamID,
         metadata: StreamMetadata,
-        networkTopology: Map<StreamPartID, Set<DhtAddress>>,
+        topology: Topology,
         subscribeGate: SubscribeGate
     ): Promise<void> {
         logger.info(`Analyze ${id}`)
-        const streamParts = [...networkTopology.keys()].filter((streamPartId) => {
-            return StreamPartIDUtils.getStreamID(streamPartId) === id
-        })
         const peersByPartition = new Map<number, Set<DhtAddress>>
-        for (const streamPartId of streamParts) {
-            peersByPartition.set(StreamPartIDUtils.getStreamPartition(streamPartId), networkTopology.get(streamPartId)!)
+        for (const partition of range(metadata.partitions)) {
+            peersByPartition.set(partition, topology.getPeers(toStreamPartID(id, partition)))
         }
         try {
             const peerIds = new Set(...peersByPartition.values())
@@ -205,7 +190,7 @@ export class Crawler {
                 ? await getMessageRate(
                     id, 
                     [...peersByPartition.keys()],
-                    await this.client.  getNetworkNodeFacade(),
+                    await this.client.getNetworkNodeFacade(),
                     subscribeGate,
                     this.config
                 )
@@ -259,21 +244,19 @@ export class Crawler {
         // we wait some time so that The Graph has been indexed the new stream
         // and it can provider valid publisher and subscriber counts to us
         await wait(this.config.crawler.newStreamAnalysisDelay)
-        const networkTopology: Map<StreamPartID, Set<DhtAddress>> = new Map() 
+        const topology = new Topology([])
         for (const partition of range(payload.metadata.partitions)) {
             const streamPartId = toStreamPartID(payload.streamId, partition)
             const entryPoints = await localNode.fetchStreamPartEntryPoints(streamPartId)
-            const peers = (await crawlTopology(localNode, entryPoints, (nodeInfo: NodeInfo) => {
+            const streamPartTopology = await crawlTopology(localNode, entryPoints, (nodeInfo: NodeInfo) => {
                 const streamPartition = nodeInfo.streamPartitions.find((streamPartition) => streamPartition.id === streamPartId)
                 return (streamPartition !== undefined)
                     ? streamPartition.deliveryLayerNeighbors
                     : []
-            }, false)).get(streamPartId)
-            if (peers !== undefined) {
-                networkTopology.set(streamPartId, peers)
-            }
+            }, `streamPart-${streamPartId}-${Date.now()}`)
+            topology.addNodeInfos(streamPartTopology.getNodeInfos())
         }
-        await this.analyzeStream(payload.streamId, payload.metadata, networkTopology, this.subscribeGate!)
+        await this.analyzeStream(payload.streamId, payload.metadata, topology, this.subscribeGate!)
     }
 
     stop(): void {
