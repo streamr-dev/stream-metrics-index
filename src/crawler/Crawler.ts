@@ -86,7 +86,7 @@ export const crawlTopology = async (
             }
         } catch (err) {
             errorNodes.add(nodeId)
-            logger.warn(`Query failed ${nodeId}`, { peerDescriptor: createPeerDescriptorLogOutput(peerDescriptor), error: err, runId })
+            logger.warn(`Query failed ${nodeId}`, { peerDescriptor: createPeerDescriptorLogOutput(peerDescriptor), err, runId })
         }
     }
     for (const node of entryPoints) {
@@ -135,7 +135,7 @@ export class Crawler {
                 )
                 await this.analyzeContractStreams(topology, this.subscribeGate)
             } catch (e) {
-                logger.error('Error', { error: e })
+                logger.error('Error', { err: e })
                 await wait(RECOVERY_DELAY)
             }
             logger.info('Crawl iteration completed')
