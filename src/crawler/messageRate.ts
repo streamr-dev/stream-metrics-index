@@ -29,7 +29,7 @@ export const getMessageRate = async (
     for (const partition of samplePartitions) {
         await subscibeGate.waitUntilOpen()
         const streamPartId = toStreamPartID(streamId, partition)
-        logger.info(`Listen: ${streamPartId}`)
+        logger.info(`Listen ${streamPartId}`)
         try {
             await node.subscribe(streamPartId)
         } catch (err) {

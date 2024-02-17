@@ -197,7 +197,7 @@ export class Crawler {
                 : 0
             const publisherCount = await this.client.getPublisherOrSubscriberCount(id, StreamPermission.PUBLISH)
             const subscriberCount = await this.client.getPublisherOrSubscriberCount(id, StreamPermission.SUBSCRIBE)
-            logger.info(`Replace: ${id}`)
+            logger.info(`Replace ${id}`)
             await this.database.replaceStream({
                 id,
                 description: metadata.description ?? null,
