@@ -1,49 +1,33 @@
+import { PeerDescriptor } from '@streamr/dht'
+import { NetworkNode, NodeInfo, streamPartIdToDataKey } from '@streamr/trackerless-network'
 import EventEmitter3 from 'eventemitter3'
-import { createNetworkNode, NetworkNode } from '@streamr/network-node'
-import { Logger, MetricsContext } from '@streamr/utils'
 import { StreamMessage, StreamPartID } from 'streamr-client'
-import { Inject, Service } from 'typedi'
-import { Config, CONFIG_TOKEN } from '../Config'
+
+const JOIN_TIMEOUT = 60 * 1000  // TODO from config
 
 export interface Events {
     subscribe: () => void
     unsubscribe: () => void
 }
 
-const logger = new Logger(module)
-
-@Service() 
 export class NetworkNodeFacade {
 
     private readonly node: NetworkNode
     private readonly eventEmitter: EventEmitter3<Events> = new EventEmitter3()
 
     constructor(
-        @Inject(CONFIG_TOKEN) config: Config
+        node: NetworkNode
     ) {
-        const nodeId = `${config.networkNode.id}#${Date.now()}`
-        logger.info(`Network node: ${nodeId}`)
-        this.node = createNetworkNode({
-            ...config.networkNode,
-            trackers: config.trackers,
-            metricsContext: new MetricsContext(),
-            id: nodeId,
-            // TODO webrtcPortRange and webrtcMaxMessageSize from config file
-            webrtcPortRange: {
-                min: 6000,
-                max: 65535
-            },
-            webrtcMaxMessageSize: 1048576
-        })
+        this.node = node
     }
 
-    subscribe(streamPartId: StreamPartID): void {
-        this.node.subscribe(streamPartId)
+    async subscribe(streamPartId: StreamPartID): Promise<void> {
+        await this.node.join(streamPartId, { minCount: 1, timeout: JOIN_TIMEOUT })
         this.eventEmitter.emit('subscribe')
     }
 
-    unsubscribe(streamPartId: StreamPartID): void {
-        this.node.unsubscribe(streamPartId)
+    async unsubscribe(streamPartId: StreamPartID): Promise<void> {
+        await this.node.leave(streamPartId)
         this.eventEmitter.emit('unsubscribe')
     }
 
@@ -59,11 +43,18 @@ export class NetworkNodeFacade {
         return Array.from(this.node.getStreamParts()).length
     }
 
-    on<T extends keyof Events>(eventName: T, listener: Events[T]): void {
-        this.eventEmitter.on(eventName, listener as any)
+    async fetchNodeInfo(peerDescriptor: PeerDescriptor): Promise<NodeInfo> {
+        return await this.node.fetchNodeInfo(peerDescriptor)
     }
 
-    destroy(): void {
-        this.node.stop()
+    async fetchStreamPartEntryPoints(streamPartId: StreamPartID): Promise<PeerDescriptor[]> {
+        const key = streamPartIdToDataKey(streamPartId)
+        return (await this.node.stack.getLayer0Node().getDataFromDht(key))
+            .filter((entry) => !entry.deleted)
+            .map((entry) => PeerDescriptor.fromBinary(entry.data!.value))
+    }
+
+    on<T extends keyof Events>(eventName: T, listener: Events[T]): void {
+        this.eventEmitter.on(eventName, listener as any)
     }
 }

@@ -5,6 +5,7 @@
     },
     "crawler": {
         "subscribeDuration": 10000,
+        "newStreamAnalysisDelay": 60000,
         "iterationDelay": 3600000
     },
     "database": {
@@ -13,48 +14,21 @@
         "user": "root",
         "password": "password"
     },
-    "trackers": [
-        {
-            "id": "0xb9e7cEBF7b03AE26458E32a059488386b05798e8",
-            "ws": "ws://127.0.0.1:30301",
-            "http": "http://10.200.10.1:30301"
-        },
-        {
-            "id": "0x0540A3e144cdD81F402e7772C76a5808B71d2d30",
-            "ws": "ws://10.200.10.1:30302",
-            "http": "http://10.200.10.1:30302"
-        },
-        {
-            "id": "0xf2C195bE194a2C91e93Eacb1d6d55a00552a85E2",
-            "ws": "ws://10.200.10.1:30303",
-            "http": "http://10.200.10.1:30303"
+    "client": {
+        "environment": "dev2",
+        "network": {
+            "controlLayer": {
+                "entryPointDiscovery": {
+                    "enabled": false
+                },
+                "websocketPortRange": {
+                    "min": 32400,
+                    "max": 32800
+                },
+                "iceServers": [],
+                "webrtcAllowPrivateAddresses": true,
+                "websocketServerEnableTls": false
+            }
         }
-    ],
-    "networkNode": {
-        "id": "0xde444A1825b160D3c14d26950712bfB82e23fB17",
-        "disconnectionWaitTime": 30000,
-        "peerPingInterval": 30000,
-        "newWebrtcConnectionTimeout": 15000,
-        "webrtcDatachannelBufferThresholdLow": 32768,
-        "webrtcDatachannelBufferThresholdHigh": 131072,
-        "iceServers": [],
-        "rttUpdateTimeout": 15000,
-        "trackerConnectionMaintenanceInterval": 5000,
-        "webrtcDisallowPrivateAddresses": false,
-        "acceptProxyConnections": false,
-        "trackerPingInterval": 60000
-    },
-    "contracts": {
-        "streamRegistryChainAddress": "0x6cCdd5d866ea766f6DF5965aA98DeCCD629ff222",
-        "streamRegistryChainRPCs": {
-            "chainId": 8995,
-            "rpcs": [
-                {
-                    "url": "http://10.200.10.1:8546"
-                }
-            ]
-        },
-        "theGraphUrl": "http://10.200.10.1:8000/subgraphs/name/streamr-dev/network-contracts",
-        "pollInterval": 10000
     }
 }

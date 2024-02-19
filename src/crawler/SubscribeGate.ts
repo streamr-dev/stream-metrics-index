@@ -1,6 +1,4 @@
-import { MetricsContext, MetricsReport, RateMetric } from '@streamr/utils'
-import { Service } from 'typedi'
-import { Gate } from '../Gate'
+import { Gate, MetricsContext, MetricsReport, RateMetric } from '@streamr/utils'
 import { Events, NetworkNodeFacade } from './NetworkNodeFacade'
 
 // TODO move MAX_MESSAGES_PER_SECOND, MAX_SUBSCRIPTION_COUNT and MESSAGE_RATE_POLL_INTERVAL to the config file
@@ -23,7 +21,6 @@ const METRICS_NAMESPACE = 'dummy'
  * after MESSAGE_RATE_POLL_INTERVAL when we have message rate data available.
  */
 
-@Service()
 export class SubscribeGate extends Gate {
 
     private readonly node: NetworkNodeFacade

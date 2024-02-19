@@ -1,7 +1,14 @@
 module.exports = {
-    preset: 'ts-jest',
+    preset: 'ts-jest/presets/js-with-ts',
     testEnvironment: 'node',
-    modulePathIgnorePatterns: [
-        '<rootDir>/dist/package.json'
-    ]
+    transform: {
+        '^.+\\.ts$': [
+            'ts-jest',
+            {
+                tsconfig: 'tsconfig.jest.json'
+            }
+        ]
+    },
+    setupFilesAfterEnv: ['jest-extended/all'],
+    modulePathIgnorePatterns: ['dist']
 }

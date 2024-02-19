@@ -1,7 +1,29 @@
-import StreamrClient, { Stream, StreamCreationEvent, StreamPermission } from 'streamr-client'
+import { DhtAddress, NodeType, getRawFromDhtAddress } from '@streamr/dht'
+import { NetworkNode } from '@streamr/trackerless-network'
+import { 
+    StreamrClient,
+    NetworkNodeType,
+    NetworkPeerDescriptor,
+    PeerDescriptor,
+    Stream,
+    StreamCreationEvent,
+    StreamID,
+    StreamMetadata,
+    StreamPermission
+} from 'streamr-client'
 import { Inject, Service } from 'typedi'
 import { CONFIG_TOKEN, Config } from './Config'
+import { NetworkNodeFacade } from './crawler/NetworkNodeFacade'
 import { count } from './utils'
+
+export const peerDescriptorTranslator = (json: NetworkPeerDescriptor): PeerDescriptor => {
+    const type = json.type === NetworkNodeType.BROWSER ? NodeType.BROWSER : NodeType.NODEJS
+    return {
+        ...json,
+        nodeId: getRawFromDhtAddress(json.nodeId as DhtAddress),
+        type
+    }
+}
 
 @Service() 
 export class StreamrClientFacade {
@@ -11,13 +33,7 @@ export class StreamrClientFacade {
     constructor(
         @Inject(CONFIG_TOKEN) config: Config
     ) {
-        this.client = new StreamrClient({
-            network: {
-                trackers: config.trackers,
-                ...config.networkNode
-            },
-            contracts: config.contracts 
-        })
+        this.client = new StreamrClient(config.client)
     }
 
     getAllStreams(): AsyncIterable<Stream> {
@@ -53,12 +69,26 @@ export class StreamrClientFacade {
         }
     }
 
+    async getStreamMetadata(streamId: StreamID): Promise<StreamMetadata> {
+        const stream = await this.client.getStream(streamId)
+        return stream.getMetadata()
+    }
+
     on(name: 'createStream', listener: (payload: StreamCreationEvent) => void): void {
         this.client.on(name, listener)
     }
 
     off(name: 'createStream', listener: (payload: StreamCreationEvent) => void): void {
         this.client.off(name, listener)
+    }
+
+    async getNetworkNodeFacade(): Promise<NetworkNodeFacade> {
+        const node = (await this.client.getNode()) as NetworkNode
+        return new NetworkNodeFacade(node)
+    }
+
+    getEntryPoints(): PeerDescriptor[] {
+        return this.client.getConfig().network.controlLayer.entryPoints!.map(peerDescriptorTranslator)
     }
 
     async destroy(): Promise<void> {

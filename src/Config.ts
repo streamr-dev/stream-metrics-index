@@ -1,7 +1,5 @@
-import { NetworkNodeOptions } from '@streamr/network-node'
 import { readFile } from 'fs/promises'
-import { StreamrClientConfig, TrackerRegistryRecord } from 'streamr-client'
-import { MarkRequired } from 'ts-essentials'
+import { StreamrClientConfig } from 'streamr-client'
 import { Token } from 'typedi'
 
 export const CONFIG_TOKEN = new Token<Config>()
@@ -13,6 +11,7 @@ export interface Config {
     }
     crawler: {
         subscribeDuration: number
+        newStreamAnalysisDelay: number
         iterationDelay: number
     }
     database: {
@@ -21,13 +20,7 @@ export interface Config {
         user: string
         password: string
     }
-    trackers: TrackerRegistryRecord[]
-    networkNode: Omit<NetworkNodeOptions, | 'trackers' | 'metricsContext'>
-    contracts: MarkRequired<
-        Pick<
-            Exclude<StreamrClientConfig['contracts'], undefined>, 
-            'streamRegistryChainAddress' | 'streamRegistryChainRPCs' | 'theGraphUrl' | 'pollInterval'
-        >, 'theGraphUrl'>
+    client: StreamrClientConfig
 }
 
 export const readFromFile = async (fileName: string): Promise<Config> => {

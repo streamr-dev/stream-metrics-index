@@ -4,8 +4,16 @@ import { Server } from 'http'
 import { omit } from 'lodash'
 import { Config } from '../src/Config'
 import { createDatabaseConnection } from '../src/utils'
+import { DhtAddress, NodeType, PeerDescriptor, createRandomDhtAddress, getRawFromDhtAddress } from '@streamr/dht'
 
 export const TEST_DATABASE_NAME = 'stream_metrics_index_test'
+
+export const createTestPeerDescriptor = (nodeId?: DhtAddress): PeerDescriptor => {
+    return {
+        nodeId: getRawFromDhtAddress(nodeId ?? createRandomDhtAddress()),
+        type: NodeType.NODEJS
+    }
+}
 
 export const dropTestDatabaseIfExists = async (config: Config['database']): Promise<void> => {
     const connection = await createDatabaseConnection(omit(config, 'name'))
