@@ -1,5 +1,5 @@
 import { PeerDescriptor, getNodeIdFromPeerDescriptor } from '@streamr/dht'
-import { StreamID, toStreamPartID } from '@streamr/protocol'
+import { StreamID, StreamPartID, StreamPartIDUtils, toStreamPartID } from '@streamr/protocol'
 import { NodeInfo } from '@streamr/trackerless-network'
 import { Logger, binaryToHex, wait } from '@streamr/utils'
 import { difference, range, sortBy } from 'lodash'
@@ -245,18 +245,17 @@ export class Crawler {
             // we wait some time so that The Graph has been indexed the new stream
             // and it can provider valid publisher and subscriber counts to us
             await wait(this.config.crawler.newStreamAnalysisDelay)
-            const topology = new Topology([])
-            for (const partition of range(payload.metadata.partitions)) {
-                const streamPartId = toStreamPartID(payload.streamId, partition)
-                const entryPoints = await localNode.fetchStreamPartEntryPoints(streamPartId)
-                const streamPartTopology = await crawlTopology(localNode, entryPoints, (nodeInfo: NodeInfo) => {
-                    const streamPartition = nodeInfo.streamPartitions.find((streamPartition) => streamPartition.id === streamPartId)
-                    return (streamPartition !== undefined)
-                        ? streamPartition.deliveryLayerNeighbors
-                        : []
-                }, `streamPart-${streamPartId}-${Date.now()}`)
-                topology.addNodeInfos(streamPartTopology.getNodeInfos())
-            }
+            // the entryPoints may contain duplicates (i.e. same node is an entry point for
+            // multiple partitions), but crawlTopology can ignore those
+            const entryPoints = (await Promise.all(range(payload.metadata.partitions)
+                .map((p) => toStreamPartID(payload.streamId, p))
+                .map((sp) => localNode.fetchStreamPartEntryPoints(sp)))).flat()
+            const topology = await crawlTopology(localNode, entryPoints, (nodeInfo: NodeInfo) => {
+                const streamPartitions = nodeInfo.streamPartitions.filter(
+                    (sp) => StreamPartIDUtils.getStreamID(sp.id as StreamPartID) === payload.streamId
+                )
+                return (streamPartitions.map((sp) => sp.deliveryLayerNeighbors)).flat()
+            }, `stream-${payload.streamId}-${Date.now()}`)
             await this.analyzeStream(payload.streamId, payload.metadata, topology, this.subscribeGate!)
         } catch (e: any) {
             logger.error(`Failed to handle new stream ${payload.streamId}`, e)

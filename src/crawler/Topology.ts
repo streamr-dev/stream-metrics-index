@@ -23,12 +23,4 @@ export class Topology {
         }
         return nodeIds
     }
-
-    getNodeInfos(): NodeInfo[] {
-        return this.nodeInfos
-    }
-
-    addNodeInfos(nodeInfos: NodeInfo[]): void {
-        this.nodeInfos.push(...nodeInfos)
-    }
 }
