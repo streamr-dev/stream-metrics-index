@@ -2,8 +2,7 @@ import { PeerDescriptor } from '@streamr/dht'
 import { NetworkNode, NodeInfo, streamPartIdToDataKey } from '@streamr/trackerless-network'
 import EventEmitter3 from 'eventemitter3'
 import { StreamMessage, StreamPartID } from 'streamr-client'
-
-const JOIN_TIMEOUT = 60 * 1000  // TODO from config
+import { Config } from '../Config'
 
 export interface Events {
     subscribe: () => void
@@ -13,16 +12,20 @@ export interface Events {
 export class NetworkNodeFacade {
 
     private readonly node: NetworkNode
+    private readonly config: Config
     private readonly eventEmitter: EventEmitter3<Events> = new EventEmitter3()
 
     constructor(
-        node: NetworkNode
+        node: NetworkNode,
+        config: Config
     ) {
         this.node = node
+        this.config = config
     }
 
     async subscribe(streamPartId: StreamPartID): Promise<void> {
-        await this.node.join(streamPartId, { minCount: 1, timeout: JOIN_TIMEOUT })
+        const timeout = this.config.crawler.subscribeJoinTimeout
+        await this.node.join(streamPartId, { minCount: 1, timeout })
         this.eventEmitter.emit('subscribe')
     }
 

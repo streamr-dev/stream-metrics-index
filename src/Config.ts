@@ -11,6 +11,7 @@ export interface Config {
     }
     crawler: {
         subscribeDuration: number
+        subscribeJoinTimeout: number
         newStreamAnalysisDelay: number
         iterationDelay: number
     }

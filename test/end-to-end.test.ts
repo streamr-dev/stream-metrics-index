@@ -11,10 +11,13 @@ import { Crawler } from '../src/crawler/Crawler'
 import { Stream } from '../src/entities'
 import { createDatabase, queryAPI } from '../src/utils'
 import { TEST_DATABASE_NAME, dropTestDatabaseIfExists } from './utils'
+import { range } from 'lodash'
 
 const PUBLISHER_PRIVATE_KEY = '0x0000000000000000000000000000000000000000000000000000000000000001'
 const SUBSCRIBER_PRIVATE_KEY = '0x0000000000000000000000000000000000000000000000000000000000000002'
 const ENTRY_POINT_PORT = 40501
+const PARTITION_COUNT = 3
+const ACTIVE_PARTITION_COUNT = 2
 
 const startEntryPoint = async (): Promise<NetworkNode> => {
     const peerDescriptor = {
@@ -106,6 +109,7 @@ describe('end-to-end', () => {
     const createTestStream = async () => {
         const stream = await publisher.createStream({ 
             id: `/test/stream-metrics-index/${Date.now()}`,
+            partitions: PARTITION_COUNT,
             description: 'mock-description'
         })
         await stream.grantPermissions({
@@ -116,13 +120,19 @@ describe('end-to-end', () => {
     }
 
     const startPublisherAndSubscriberForStream = async (streamId: StreamID, publishingAbortControler: AbortSignal) => {
-        const subscription = await subscriber.subscribe(streamId)
-        setAbortableInterval(async () => {
-            await publisher.publish(streamId, { foo: Date.now() })
-        }, 500, publishingAbortControler)
-        // wait until publisher and subscriber are connected
-        const iterator = subscription[Symbol.asyncIterator]()
-        await nextValue(iterator)
+        return Promise.all(range(ACTIVE_PARTITION_COUNT).map(async (partition) => {
+            const streamPartDefinition = {
+                streamId: streamId,
+                partition
+            }
+            const subscription = await subscriber.subscribe(streamPartDefinition)
+            setAbortableInterval(async () => {
+                await publisher.publish(streamPartDefinition, { foo: Date.now() })
+            }, 500, publishingAbortControler)
+            // wait until publisher and subscriber are connected
+            const iterator = subscription[Symbol.asyncIterator]()
+            await nextValue(iterator)
+        }))
     }
 
     beforeAll(async () => {
@@ -134,6 +144,7 @@ describe('end-to-end', () => {
             },
             crawler: {
                 subscribeDuration: 2000,
+                subscribeJoinTimeout: 1000,
                 newStreamAnalysisDelay: 5000
             },
             database: {

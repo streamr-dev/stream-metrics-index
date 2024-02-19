@@ -5,6 +5,7 @@
     },
     "crawler": {
         "subscribeDuration": 10000,
+        "subscribeJoinTimeout": 60000,
         "newStreamAnalysisDelay": 60000,
         "iterationDelay": 3600000
     },
