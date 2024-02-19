@@ -32,7 +32,7 @@
     "typedi": "^0.10.0"
   },
   "devDependencies": {
-    "@tsconfig/node21": "^21.0.1",
+    "@tsconfig/node20": "^20.1.2",
     "@types/cors": "^2.8.13",
     "@types/express": "^4.17.21",
     "@types/jest": "^29.5.12",
