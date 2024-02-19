@@ -50,7 +50,8 @@ export class NetworkNodeFacade {
     async fetchStreamPartEntryPoints(streamPartId: StreamPartID): Promise<PeerDescriptor[]> {
         const key = streamPartIdToDataKey(streamPartId)
         return (await this.node.stack.getLayer0Node().getDataFromDht(key))
-            .filter((entry) => !entry.deleted).map((entry) => PeerDescriptor.fromBinary(entry.data!.value))
+            .filter((entry) => !entry.deleted)
+            .map((entry) => PeerDescriptor.fromBinary(entry.data!.value))
     }
 
     on<T extends keyof Events>(eventName: T, listener: Events[T]): void {
