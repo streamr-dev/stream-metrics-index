@@ -29,11 +29,13 @@ export const peerDescriptorTranslator = (json: NetworkPeerDescriptor): PeerDescr
 export class StreamrClientFacade {
 
     private readonly client: StreamrClient
+    private readonly config: Config
 
     constructor(
         @Inject(CONFIG_TOKEN) config: Config
     ) {
         this.client = new StreamrClient(config.client)
+        this.config = config
     }
 
     getAllStreams(): AsyncIterable<Stream> {
@@ -84,7 +86,7 @@ export class StreamrClientFacade {
 
     async getNetworkNodeFacade(): Promise<NetworkNodeFacade> {
         const node = (await this.client.getNode()) as NetworkNode
-        return new NetworkNodeFacade(node)
+        return new NetworkNodeFacade(node, this.config)
     }
 
     getEntryPoints(): PeerDescriptor[] {
