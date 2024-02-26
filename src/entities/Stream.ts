@@ -27,7 +27,7 @@ export enum StreamOrderBy {
 }
 
 registerEnumType(StreamOrderBy, {
-    name: 'OrderBy'
+    name: 'StreamOrderBy'
 })
 
 /* eslint-disable indent */
