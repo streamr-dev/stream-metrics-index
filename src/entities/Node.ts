@@ -1,4 +1,4 @@
-import { Field, ObjectType } from 'type-graphql'
+import { Field, Float, ObjectType } from 'type-graphql'
 
 /* eslint-disable indent */
 @ObjectType()
@@ -7,6 +7,21 @@ export class Node {
     id!: string
     @Field(() => String, { nullable: true })
     ipAddress!: string | null
+    @Field(() => Location, { nullable: true })
+    location!: Location | null
+}
+
+/* eslint-disable indent */
+@ObjectType()
+export class Location {
+    @Field(() => Float)
+    latitude!: number
+    @Field(() => Float)
+    longitude!: number
+    @Field()
+    city!: string
+    @Field()
+    country!: string
 }
 
 /* eslint-disable indent */

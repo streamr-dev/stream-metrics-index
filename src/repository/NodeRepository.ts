@@ -5,6 +5,8 @@ import { Topology } from '../crawler/Topology'
 import { Nodes } from '../entities/Node'
 import { createSqlQuery } from '../utils'
 import { ConnectionPool } from './ConnectionPool'
+import { NodesQueryFields } from '../api/NodeResolver'
+import { getLocationFromIpAddress } from '../location'
 
 interface NodeRow extends RowDataPacket {
     id: string
@@ -25,6 +27,7 @@ export class NodeRepository {
     }
 
     async getNodes(
+        requestedFields: Set<NodesQueryFields>,
         ids?: string[],
         pageSize?: number,
         cursor?: string
@@ -40,7 +43,19 @@ export class NodeRepository {
             `SELECT id, ipAddress FROM nodes`,
             whereClauses
         )
-        return this.connectionPool.queryPaginated<NodeRow[]>(sql, params)
+        const rows = await this.connectionPool.queryPaginated<NodeRow[]>(sql, params)
+        const items: Nodes['items'] = []
+        const includeLocation = requestedFields.has('location')
+        for (const row of rows.items) {
+            items.push({
+                ...row,
+                location: (includeLocation && (row.ipAddress !== null)) ? (getLocationFromIpAddress(row.ipAddress) ?? null) : null
+            })
+        }
+        return {
+            items,
+            cursor: rows.cursor
+        }
     }
 
     async replaceNetworkTopology(topology: Topology): Promise<void> {
