@@ -17,3 +17,13 @@ CREATE TABLE IF NOT EXISTS nodes (
     id CHAR(40) NOT NULL PRIMARY KEY,
     ipAddress VARCHAR(15)
 );
+
+CREATE TABLE IF NOT EXISTS neighbors (
+    streamPartId VARCHAR(500) NOT NULL,
+    nodeId1 CHAR(40) NOT NULL,
+    nodeId2 CHAR(40) NOT NULL,
+    PRIMARY KEY (streamPartId, nodeId1, nodeId2),
+    FOREIGN KEY (nodeId1) REFERENCES nodes(id),
+    FOREIGN KEY (nodeId2) REFERENCES nodes(id),
+    INDEX neighbors_streamPartId (streamPartId)
+);

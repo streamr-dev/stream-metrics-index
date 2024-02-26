@@ -9,9 +9,33 @@ import { StreamRepository } from '../src/repository/StreamRepository'
 import { createDatabase, queryAPI } from '../src/utils'
 import { dropTestDatabaseIfExists, TEST_DATABASE_NAME } from './utils'
 import { NodeRepository } from '../src/repository/NodeRepository'
-import { createRandomDhtAddress } from '@streamr/dht'
+import { DhtAddress, createRandomDhtAddress } from '@streamr/dht'
 import { Multimap } from '@streamr/utils'
 import { StreamPartIDUtils } from '@streamr/protocol'
+
+const TOPOLOGY_STREAM_PART_ID = StreamPartIDUtils.parse('stream#0')
+
+const storeTestTopology = async (
+    node1: DhtAddress,
+    node2: DhtAddress
+) => {
+    const nodeRepository = Container.get(NodeRepository)
+    const streamPartNeighbors1 = new Multimap()
+    streamPartNeighbors1.add(TOPOLOGY_STREAM_PART_ID, node2)
+    const streamPartNeighbors2 = new Multimap()
+    streamPartNeighbors2.add(TOPOLOGY_STREAM_PART_ID, node1)
+    await nodeRepository.replaceNetworkTopology({
+        getNodes: () => [{
+            id: node1,
+            streamPartNeighbors: streamPartNeighbors1,
+            ipAddress: ''
+        }, {
+            id: node2,
+            streamPartNeighbors: streamPartNeighbors2,
+            ipAddress: ''
+        }]
+    } as any)
+}
 
 describe('APIServer', () => {
 
@@ -243,6 +267,80 @@ describe('APIServer', () => {
         }])
     })
 
+    describe('nodes', () => {
+
+        let node1: DhtAddress
+        let node2: DhtAddress
+
+        beforeEach(async () => {
+            node1 = createRandomDhtAddress()
+            node2 = createRandomDhtAddress()
+            await storeTestTopology(node1, node2)
+        })
+
+        it('ids', async () => {
+            const response = await queryAPI(`{
+                nodes(ids: ["${node1}"]) {
+                    items {
+                        id
+                        ipAddress
+                        neighbors {
+                            streamPartId
+                            nodeIds
+                        }
+                    }
+                }
+            }`, apiPort)
+            const node = response['items'][0]
+            expect(node).toEqual({
+                id: node1,
+                ipAddress: '',
+                neighbors: [{
+                    streamPartId: TOPOLOGY_STREAM_PART_ID,
+                    nodeIds: [node2]
+                }]
+            })
+        })
+
+        it('streamPart', async () => {
+            const response = await queryAPI(`{
+                nodes(streamPart: "${TOPOLOGY_STREAM_PART_ID}") {
+                    items {
+                        id
+                    }
+                }
+            }`, apiPort)
+            const nodes = response['items']
+            expect(nodes.map((n: any) => n.id)).toIncludeSameMembers([node1, node2])
+        })
+
+        it('neighbors of one node in stream part', async () => {
+            const response = await queryAPI(`{
+                nodes(neighbor: {node: "${node1}", streamPart: "${TOPOLOGY_STREAM_PART_ID}"}) {
+                    items {
+                        id
+                    }
+                }
+            }`, apiPort)
+            const nodes = response['items']
+            expect(nodes.map((n: any) => n.id)).toEqual([node2])
+        })
+
+        it('all neighbors in stream part', async () => {
+            const response = await queryAPI(`{
+                neighbors(streamPart: "${TOPOLOGY_STREAM_PART_ID}") {
+                    items {
+                        nodeId1
+                        nodeId2
+                    }
+                }
+            }`, apiPort)
+            const neighbors = response['items']
+            const actualNodes = [neighbors[0].nodeId1, neighbors[0].nodeId2]
+            expect(actualNodes).toIncludeSameMembers([node1, node2])
+        })
+    })
+
     it('summary', async () => {
         const streamRepository = Container.get(StreamRepository)
         await streamRepository.replaceStream({
@@ -261,25 +359,7 @@ describe('APIServer', () => {
             publisherCount: null,
             subscriberCount: null
         })
-        const streamPartId = StreamPartIDUtils.parse('stream#0')
-        const nodeRepository = Container.get(NodeRepository)
-        const node1 = createRandomDhtAddress()
-        const node2 = createRandomDhtAddress()
-        const streamPartNeighbors1 = new Multimap()
-        streamPartNeighbors1.add(streamPartId, node2)
-        const streamPartNeighbors2 = new Multimap()
-        streamPartNeighbors2.add(streamPartId, node1)
-        await nodeRepository.replaceNetworkTopology({
-            getNodes: () => [{
-                id: node1,
-                streamPartNeighbors: streamPartNeighbors1,
-                ipAddress: ''
-            }, {
-                id: node2,
-                streamPartNeighbors: streamPartNeighbors2,
-                ipAddress: ''
-            }]
-        } as any)
+        await storeTestTopology(createRandomDhtAddress(), createRandomDhtAddress())
         const summary = await queryAPI(`{
             summary {
                 streamCount

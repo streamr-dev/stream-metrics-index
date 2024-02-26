@@ -1,6 +1,8 @@
-import { Arg, Int, Query, Resolver } from 'type-graphql'
+import { StreamPartIDUtils } from '@streamr/protocol'
+import { FieldNode, GraphQLResolveInfo } from 'graphql'
+import { Arg, Info, Int, Query, Resolver } from 'type-graphql'
 import { Inject, Service } from 'typedi'
-import { Nodes } from '../entities/Node'
+import { NeighborInput, Neighbors, Nodes } from '../entities/Node'
 import { NodeRepository } from '../repository/NodeRepository'
 
 @Resolver()
@@ -17,10 +19,30 @@ export class NodeResolver {
 
     @Query(() => Nodes)
     async nodes(
+        @Info() info: GraphQLResolveInfo,
         @Arg("ids", () => [String], { nullable: true }) ids?: string[],
+        @Arg("streamPart", { nullable: true }) streamPart?: string,
+        @Arg("neighbor", { nullable: true }) neighbor?: NeighborInput,
         @Arg("pageSize", () => Int, { nullable: true }) pageSize?: number,
         @Arg("cursor", { nullable: true }) cursor?: string,
     ): Promise<Nodes> {
-        return this.repository.getNodes(ids, pageSize, cursor)
+        const nodesField = info.fieldNodes[0]
+        const itemsField = nodesField.selectionSet!.selections[0] as FieldNode
+        const requestedFields = itemsField.selectionSet!.selections
+        return this.repository.getNodes(
+            new Set(requestedFields.map((f: any) => f.name.value)),
+            ids,
+            (streamPart !== undefined) ? StreamPartIDUtils.parse(streamPart) : undefined,
+            neighbor,
+            pageSize,
+            cursor
+        )
+    }
+
+    @Query(() => Neighbors)
+    async neighbors(
+        @Arg("streamPart", { nullable: false }) streamPart: string,
+    ): Promise<Neighbors> {
+        return this.repository.getNeighbors(StreamPartIDUtils.parse(streamPart))
     }
 }
