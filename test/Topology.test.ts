@@ -25,7 +25,11 @@ describe('Topology', () => {
                 deliveryLayerNeighbors: [nodes[0], nodes[1], nodes[2]]
             }]
         }] as any)
-        expect([...topology.getNeighbors(getNodeIdFromPeerDescriptor(nodes[0]), STREAM_PART_ID_1)]).toHaveLength(1)
-        expect([...topology.getNeighbors(getNodeIdFromPeerDescriptor(nodes[2]), STREAM_PART_ID_2)]).toHaveLength(2)
+        expect([...topology.getNeighbors(getNodeIdFromPeerDescriptor(nodes[0]), STREAM_PART_ID_1)]).toIncludeSameMembers([
+            getNodeIdFromPeerDescriptor(nodes[2])
+        ])
+        expect([...topology.getNeighbors(getNodeIdFromPeerDescriptor(nodes[2]), STREAM_PART_ID_2)]).toIncludeSameMembers([
+            getNodeIdFromPeerDescriptor(nodes[0]), getNodeIdFromPeerDescriptor(nodes[2])
+        ])
     })
 })
