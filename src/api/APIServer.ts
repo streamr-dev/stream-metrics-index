@@ -9,6 +9,7 @@ import { buildSchema } from 'type-graphql'
 import { Container, Inject, Service } from 'typedi'
 import { Config, CONFIG_TOKEN } from '../Config'
 import { StreamResolver } from './StreamResolver'
+import { SummaryResolver } from './SummaryResolver'
 
 const logger = new Logger(module)
 
@@ -28,7 +29,7 @@ export class APIServer {
 
     async start(): Promise<void> {
         const schema = await buildSchema({
-            resolvers: [StreamResolver],
+            resolvers: [StreamResolver, SummaryResolver],
             container: Container,
             validate: false
         })

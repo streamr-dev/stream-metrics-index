@@ -5,7 +5,7 @@ import Container from 'typedi'
 import { APIServer } from '../src/api/APIServer'
 import { CONFIG_TOKEN } from '../src/Config'
 import { StreamrClientFacade } from '../src/StreamrClientFacade'
-import { StreamRepository } from '../src/StreamRepository'
+import { StreamRepository } from '../src/repository/StreamRepository'
 import { createDatabase, queryAPI } from '../src/utils'
 import { dropTestDatabaseIfExists, TEST_DATABASE_NAME } from './utils'
 
