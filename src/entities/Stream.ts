@@ -1,6 +1,6 @@
-/* eslint-disable indent */
 import { Field, Float, Int, ObjectType, registerEnumType } from 'type-graphql'
 
+/* eslint-disable indent */
 @ObjectType()
 export class Stream {
     @Field()
@@ -17,7 +17,7 @@ export class Stream {
     subscriberCount!: number | null
 }
 
-export enum OrderBy {
+export enum StreamOrderBy {
     ID = 'ID',
     DESCRIPTION = 'DESCRIPTION',
     PEER_COUNT = 'PEER_COUNT',
@@ -26,31 +26,15 @@ export enum OrderBy {
     PUBLISHER_COUNT = 'PUBLISHER_COUNT'
 }
 
-registerEnumType(OrderBy, {
-    name: 'OrderBy'
+registerEnumType(StreamOrderBy, {
+    name: 'StreamOrderBy'
 })
 
-export enum OrderDirection {
-    ASC = 'ASC',
-    DESC = 'DESC'
-}
-
-registerEnumType(OrderDirection, {
-    name: 'OrderDirection'
-})
-
+/* eslint-disable indent */
 @ObjectType()
 export class Streams {
     @Field(() => [Stream])
     items!: Stream[]
     @Field(() => String, { nullable: true })
     cursor!: string | null
-}
-
-@ObjectType()
-export class Summary {
-    @Field(() => Int)
-    streamCount!: number
-    @Field(() => Float)
-    messagesPerSecond!: number
 }

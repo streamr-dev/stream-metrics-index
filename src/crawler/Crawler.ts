@@ -7,7 +7,7 @@ import pLimit from 'p-limit'
 import { DhtAddress, Stream, StreamCreationEvent, StreamMetadata, StreamPermission } from 'streamr-client'
 import { Inject, Service } from 'typedi'
 import { CONFIG_TOKEN, Config } from '../Config'
-import { StreamRepository } from '../StreamRepository'
+import { StreamRepository } from '../repository/StreamRepository'
 import { StreamrClientFacade } from '../StreamrClientFacade'
 import { collect, retry } from '../utils'
 import { NetworkNodeFacade } from './NetworkNodeFacade'
@@ -99,18 +99,18 @@ export const crawlTopology = async (
 @Service()
 export class Crawler {
 
-    private readonly database: StreamRepository
+    private readonly streamRepository: StreamRepository
     private readonly client: StreamrClientFacade
     private readonly config: Config
     private subscribeGate?: SubscribeGate
     private onStreamCreated?: (payload: StreamCreationEvent) => Promise<void>
 
     constructor(
-        @Inject() database: StreamRepository,
+        @Inject() streamRepository: StreamRepository,
         @Inject() client: StreamrClientFacade,
         @Inject(CONFIG_TOKEN) config: Config
     ) {
-        this.database = database
+        this.streamRepository = streamRepository
         this.client = client
         this.config = config
     }
@@ -156,7 +156,7 @@ export class Crawler {
         // the graph-node dependency may not be available immediately after the service has
         // been started
         const contractStreams = await retry(() => collect(this.client.getAllStreams()), 'Query streams')
-        const databaseStreams = await this.database.getAllStreams()
+        const databaseStreams = await this.streamRepository.getAllStreams()
         logger.info(`Streams: contract=${contractStreams.length}, database=${databaseStreams.length}`)
         const sortedContractStreams = sortBy(contractStreams, getCrawlOrderComparator(databaseStreams))
 
@@ -198,7 +198,7 @@ export class Crawler {
             const publisherCount = await this.client.getPublisherOrSubscriberCount(id, StreamPermission.PUBLISH)
             const subscriberCount = await this.client.getPublisherOrSubscriberCount(id, StreamPermission.SUBSCRIBE)
             logger.info(`Replace ${id}`)
-            await this.database.replaceStream({
+            await this.streamRepository.replaceStream({
                 id,
                 description: metadata.description ?? null,
                 peerCount: peerIds.size,
@@ -220,7 +220,7 @@ export class Crawler {
         const removedStreamsIds = difference(databaseStreamIds, contractStreamIds)
         for (const streamId of removedStreamsIds) {
             logger.info(`Delete ${streamId}`)
-            await this.database.deleteStream(streamId)
+            await this.streamRepository.deleteStream(streamId)
         }
     }
 
@@ -234,7 +234,7 @@ export class Crawler {
             // - assume no peers and no traffic
             // - assume that no explicit permissions have been granted yet (the creator
             //   is the only publisher and subscriber
-            await this.database.replaceStream({
+            await this.streamRepository.replaceStream({
                 id: payload.streamId,
                 description: payload.metadata.description ?? null,
                 peerCount: 0,

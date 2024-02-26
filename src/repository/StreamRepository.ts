@@ -1,10 +1,11 @@
 import { Logger } from '@streamr/utils'
-import { Pool, RowDataPacket, createPool } from 'mysql2/promise'
+import { RowDataPacket } from 'mysql2/promise'
 import { Inject, Service } from 'typedi'
-import { CONFIG_TOKEN, Config } from './Config'
-import { StreamrClientFacade } from './StreamrClientFacade'
-import { OrderBy, OrderDirection, Stream, Streams, Summary } from './entities'
-import { collect } from './utils'
+import { StreamrClientFacade } from '../StreamrClientFacade'
+import { OrderDirection } from '../entities/OrderDirection'
+import { StreamOrderBy, Stream, Streams } from '../entities/Stream'
+import { collect } from '../utils'
+import { ConnectionPool } from './ConnectionPool'
 
 interface StreamRow extends RowDataPacket {
     id: string
@@ -27,27 +28,22 @@ const logger = new Logger(module)
 @Service()
 export class StreamRepository {
 
-    private readonly connectionPool: Pool
+    private readonly connectionPool: ConnectionPool
     private readonly client: StreamrClientFacade
 
     constructor(
         @Inject() client: StreamrClientFacade,
-        @Inject(CONFIG_TOKEN) config: Config
+        @Inject() connectionPool: ConnectionPool
     ) {
         this.client = client
-        this.connectionPool = createPool({
-            host: config.database.host,
-            database: config.database.name,
-            user: config.database.user,
-            password: config.database.password
-        })
+        this.connectionPool = connectionPool
     }
 
     async getStreams(
         ids?: string[],
         searchTerm?: string,
         owner?: string,
-        orderBy?: OrderBy,
+        orderBy?: StreamOrderBy,
         orderDirection?: OrderDirection,
         pageSize?: number,
         cursor?: string
@@ -72,7 +68,7 @@ export class StreamRepository {
             const streamIds = streams.map((s) => s.id)
             params.push(streamIds)
         }
-        const orderByExpression = StreamRepository.formOrderByExpression(orderBy ?? OrderBy.ID, orderDirection ?? OrderDirection.ASC)
+        const orderByExpression = StreamRepository.formOrderByExpression(orderBy ?? StreamOrderBy.ID, orderDirection ?? OrderDirection.ASC)
         const sql = `
             SELECT id, description, peerCount, messagesPerSecond, publisherCount, subscriberCount 
             FROM streams
@@ -85,27 +81,27 @@ export class StreamRepository {
         // the result set or a token which references to a stateful cache).
         const offset = (cursor !== undefined) ? parseInt(cursor, 10) : 0
         params.push(limit, offset)
-        const rows = await this.queryOrExecute<StreamRow[]>(sql, params)
+        const rows = await this.connectionPool.queryOrExecute<StreamRow[]>(sql, params)
         return {
             items: rows,
             cursor: (rows.length === pageSize) ? String(offset + rows.length) : null
         }
     }
 
-    private static formOrderByExpression(orderBy: OrderBy, orderDirection: OrderDirection) {
+    private static formOrderByExpression(orderBy: StreamOrderBy, orderDirection: OrderDirection) {
         const getFieldName = () => {
             switch (orderBy) {
-                case OrderBy.ID:
+                case StreamOrderBy.ID:
                     return 'id'
-                case OrderBy.DESCRIPTION:
+                case StreamOrderBy.DESCRIPTION:
                     return 'description'
-                case OrderBy.PEER_COUNT:
+                case StreamOrderBy.PEER_COUNT:
                     return 'peerCount'
-                case OrderBy.MESSAGES_PER_SECOND:
+                case StreamOrderBy.MESSAGES_PER_SECOND:
                     return 'messagesPerSecond'
-                case OrderBy.PUBLISHER_COUNT:
+                case StreamOrderBy.PUBLISHER_COUNT:
                     return 'publisherCount'
-                case OrderBy.SUBSCRIBER_COUNT:
+                case StreamOrderBy.SUBSCRIBER_COUNT:
                     return 'subscriberCount'
                 default:
                     throw new Error('assertion failed')
@@ -127,19 +123,8 @@ export class StreamRepository {
         return `${fieldName} IS NULL ${directionSql}, ${fieldName} ${directionSql} ${stableSortSuffix}`
     }
 
-    async getSummary(): Promise<Summary> {
-        interface SummaryRow extends RowDataPacket {
-            streamCount: number
-            messagesPerSecond: number
-        } 
-        const rows = await this.queryOrExecute<SummaryRow[]>(
-            'SELECT count(*) as streamCount, sum(messagesPerSecond) as messagesPerSecond FROM streams'
-        )
-        return rows[0]
-    }
-
     async getAllStreams(): Promise<{ id: string, crawlTimestamp: number }[]> {
-        const rows = await this.queryOrExecute<StreamRow[]>(
+        const rows = await this.connectionPool.queryOrExecute<StreamRow[]>(
             'SELECT id, crawlTimestamp FROM streams'
         )
         return rows.map((r: StreamRow) => {
@@ -151,14 +136,14 @@ export class StreamRepository {
     }
 
     async deleteStream(id: string): Promise<void> {
-        await this.queryOrExecute(
+        await this.connectionPool.queryOrExecute(
             'DELETE FROM streams WHERE id = ?',
             [id]
         )
     }
 
     async replaceStream(stream: Stream): Promise<void> {
-        await this.queryOrExecute(
+        await this.connectionPool.queryOrExecute(
             `REPLACE INTO streams (
                 id, description, peerCount, messagesPerSecond, publisherCount, subscriberCount, crawlTimestamp
             ) VALUES (
@@ -166,22 +151,5 @@ export class StreamRepository {
             )`,
             [stream.id, stream.description, stream.peerCount, stream.messagesPerSecond, stream.publisherCount, stream.subscriberCount, new Date()]
         )
-    }
-
-    private async queryOrExecute<T extends RowDataPacket[]>(sql: string, params?: any): Promise<T> {
-        const connection = await this.connectionPool.getConnection()
-        try {
-            const [ rows ] = await connection.query<T>(
-                sql,
-                params
-            )
-            return rows
-        } finally {
-            connection.release()
-        }
-    }
-
-    async destroy(): Promise<void> {
-        this.connectionPool.end()
     }
 }
