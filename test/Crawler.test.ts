@@ -15,13 +15,13 @@ describe('Crawler', () => {
         return {
             peerDescriptor,
             controlLayer: {
-                neighbors: neighbors.get(getNodeIdFromPeerDescriptor(peerDescriptor)) ?? [],
+                neighbors: [],
                 connections: []
             },
             streamPartitions: [{ 
                 id: STREAM_PART_ID,
                 controlLayerNeighbors: [],
-                deliveryLayerNeighbors: []
+                deliveryLayerNeighbors: neighbors.get(getNodeIdFromPeerDescriptor(peerDescriptor)) ?? []
             }],
             version: ''
         }
@@ -55,7 +55,12 @@ describe('Crawler', () => {
                 )
             })
         }
-        const topology = await crawlTopology(localNode as any, [nodes[0], nodes[5]], (response: NodeInfo) => response.controlLayer!.neighbors, '')
+        const topology = await crawlTopology(
+            localNode as any,
+            [nodes[0], nodes[5]],
+            (response: NodeInfo) => response.streamPartitions[0].deliveryLayerNeighbors,
+            ''
+        )
         expect(localNode.fetchNodeInfo).toHaveBeenCalledTimes(nodes.length)
         expect([...topology.getPeers(STREAM_PART_ID)!]).toIncludeSameMembers(nodes.map((n) => getNodeIdFromPeerDescriptor(n)))
     })
