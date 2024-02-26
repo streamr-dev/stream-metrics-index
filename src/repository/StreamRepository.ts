@@ -3,7 +3,7 @@ import { RowDataPacket } from 'mysql2/promise'
 import { Inject, Service } from 'typedi'
 import { StreamrClientFacade } from '../StreamrClientFacade'
 import { OrderDirection } from '../entities/OrderDirection'
-import { OrderBy, Stream, Streams } from '../entities/Stream'
+import { StreamOrderBy, Stream, Streams } from '../entities/Stream'
 import { collect } from '../utils'
 import { ConnectionPool } from './ConnectionPool'
 
@@ -43,7 +43,7 @@ export class StreamRepository {
         ids?: string[],
         searchTerm?: string,
         owner?: string,
-        orderBy?: OrderBy,
+        orderBy?: StreamOrderBy,
         orderDirection?: OrderDirection,
         pageSize?: number,
         cursor?: string
@@ -68,7 +68,7 @@ export class StreamRepository {
             const streamIds = streams.map((s) => s.id)
             params.push(streamIds)
         }
-        const orderByExpression = StreamRepository.formOrderByExpression(orderBy ?? OrderBy.ID, orderDirection ?? OrderDirection.ASC)
+        const orderByExpression = StreamRepository.formOrderByExpression(orderBy ?? StreamOrderBy.ID, orderDirection ?? OrderDirection.ASC)
         const sql = `
             SELECT id, description, peerCount, messagesPerSecond, publisherCount, subscriberCount 
             FROM streams
@@ -88,20 +88,20 @@ export class StreamRepository {
         }
     }
 
-    private static formOrderByExpression(orderBy: OrderBy, orderDirection: OrderDirection) {
+    private static formOrderByExpression(orderBy: StreamOrderBy, orderDirection: OrderDirection) {
         const getFieldName = () => {
             switch (orderBy) {
-                case OrderBy.ID:
+                case StreamOrderBy.ID:
                     return 'id'
-                case OrderBy.DESCRIPTION:
+                case StreamOrderBy.DESCRIPTION:
                     return 'description'
-                case OrderBy.PEER_COUNT:
+                case StreamOrderBy.PEER_COUNT:
                     return 'peerCount'
-                case OrderBy.MESSAGES_PER_SECOND:
+                case StreamOrderBy.MESSAGES_PER_SECOND:
                     return 'messagesPerSecond'
-                case OrderBy.PUBLISHER_COUNT:
+                case StreamOrderBy.PUBLISHER_COUNT:
                     return 'publisherCount'
-                case OrderBy.SUBSCRIBER_COUNT:
+                case StreamOrderBy.SUBSCRIBER_COUNT:
                     return 'subscriberCount'
                 default:
                     throw new Error('assertion failed')

@@ -17,7 +17,7 @@ export class Stream {
     subscriberCount!: number | null
 }
 
-export enum OrderBy {
+export enum StreamOrderBy {
     ID = 'ID',
     DESCRIPTION = 'DESCRIPTION',
     PEER_COUNT = 'PEER_COUNT',
@@ -26,7 +26,7 @@ export enum OrderBy {
     PUBLISHER_COUNT = 'PUBLISHER_COUNT'
 }
 
-registerEnumType(OrderBy, {
+registerEnumType(StreamOrderBy, {
     name: 'OrderBy'
 })
 
