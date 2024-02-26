@@ -1,6 +1,6 @@
 import { Logger, wait } from '@streamr/utils'
 import { readFile } from 'fs/promises'
-import { omit } from 'lodash'
+import { omit, without } from 'lodash'
 import { Connection, createConnection } from 'mysql2/promise'
 import fetch from 'node-fetch'
 import { Config } from './Config'
@@ -45,8 +45,11 @@ export const createDatabase = async (config: Config['database']): Promise<void> 
     await connection1.execute(`CREATE DATABASE IF NOT EXISTS ${config.name}`)
     connection1.destroy()
     const connection2 = await createDatabaseConnection(config)
-    const statement = await readFile('./initialize-database.sql', { encoding: 'utf-8' })
-    connection2.query(statement)
+    const sqlFileContent = await readFile('./initialize-database.sql', { encoding: 'utf-8' })
+    const statements = without(sqlFileContent.split(';').map((statement) => statement.trim()), '')
+    for (const statement of statements) {
+        await connection2.execute(statement)
+    }
     connection2.destroy()
 }
 
@@ -81,4 +84,21 @@ export const queryAPI = async (query: string, port: number): Promise<any> => {
     } else {
         throw new Error(`Query error: ${body.errors.map((e: any) => e.message)}`)
     }
+}
+
+export const createSqlQuery = (select: string, whereClauses: string[], orderByExpression?: string): string => {
+    let sql = select
+    if (whereClauses.length > 0) {
+        sql += ` WHERE ${whereClauses.join(' AND ')}`
+    }
+    if (orderByExpression !== undefined) {
+        sql += ` ORDER BY ${orderByExpression}`
+    }
+    return sql
+}
+
+// TODO move to @streamr/utils
+export const numberToIpv4 = (value: number): string => {
+    const octets = [24, 16, 8, 0].map((shift) => (value >> shift) & 255)
+    return octets.join('.')
 }

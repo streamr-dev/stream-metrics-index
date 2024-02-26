@@ -4,7 +4,7 @@ import { Inject, Service } from 'typedi'
 import { StreamrClientFacade } from '../StreamrClientFacade'
 import { OrderDirection } from '../entities/OrderDirection'
 import { StreamOrderBy, Stream, Streams } from '../entities/Stream'
-import { collect } from '../utils'
+import { collect, createSqlQuery } from '../utils'
 import { ConnectionPool } from './ConnectionPool'
 
 interface StreamRow extends RowDataPacket {
@@ -20,8 +20,6 @@ const EMPTY_SEARCH_RESULT = {
     items: [],
     cursor: null
 }
-
-const DEFAULT_PAGE_SIZE = 100
 
 const logger = new Logger(module)
 
@@ -68,24 +66,12 @@ export class StreamRepository {
             const streamIds = streams.map((s) => s.id)
             params.push(streamIds)
         }
-        const orderByExpression = StreamRepository.formOrderByExpression(orderBy ?? StreamOrderBy.ID, orderDirection ?? OrderDirection.ASC)
-        const sql = `
-            SELECT id, description, peerCount, messagesPerSecond, publisherCount, subscriberCount 
-            FROM streams
-            ${(whereClauses.length > 0) ? 'WHERE ' + whereClauses.join(' AND ') : ''}
-            ORDER BY ${orderByExpression}
-            LIMIT ? OFFSET ?`
-        const limit = pageSize ?? DEFAULT_PAGE_SIZE
-        // The cursor is currently just an offset to the result set. We can later implement
-        // enhanced cursor functionality if needed (e.g. cursor can be the last item of
-        // the result set or a token which references to a stateful cache).
-        const offset = (cursor !== undefined) ? parseInt(cursor, 10) : 0
-        params.push(limit, offset)
-        const rows = await this.connectionPool.queryOrExecute<StreamRow[]>(sql, params)
-        return {
-            items: rows,
-            cursor: (rows.length === pageSize) ? String(offset + rows.length) : null
-        }
+        const sql = createSqlQuery(
+            'SELECT id, description, peerCount, messagesPerSecond, publisherCount, subscriberCount FROM streams',
+            whereClauses,
+            StreamRepository.formOrderByExpression(orderBy ?? StreamOrderBy.ID, orderDirection ?? OrderDirection.ASC)
+        )
+        return this.connectionPool.queryPaginated<StreamRow[]>(sql, params, pageSize, cursor)
     }
 
     private static formOrderByExpression(orderBy: StreamOrderBy, orderDirection: OrderDirection) {

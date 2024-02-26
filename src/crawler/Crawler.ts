@@ -14,6 +14,7 @@ import { NetworkNodeFacade } from './NetworkNodeFacade'
 import { MAX_SUBSCRIPTION_COUNT, SubscribeGate } from './SubscribeGate'
 import { Topology } from './Topology'
 import { getMessageRate } from './messageRate'
+import { NodeRepository } from '../repository/NodeRepository'
 
 const logger = new Logger(module)
 
@@ -100,6 +101,7 @@ export const crawlTopology = async (
 export class Crawler {
 
     private readonly streamRepository: StreamRepository
+    private readonly nodeRepository: NodeRepository
     private readonly client: StreamrClientFacade
     private readonly config: Config
     private subscribeGate?: SubscribeGate
@@ -107,10 +109,12 @@ export class Crawler {
 
     constructor(
         @Inject() streamRepository: StreamRepository,
+        @Inject() nodeRepository: NodeRepository,
         @Inject() client: StreamrClientFacade,
         @Inject(CONFIG_TOKEN) config: Config
     ) {
         this.streamRepository = streamRepository
+        this.nodeRepository = nodeRepository
         this.client = client
         this.config = config
     }
@@ -133,6 +137,7 @@ export class Crawler {
                     (nodeInfo: NodeInfo) => nodeInfo.controlLayer!.neighbors,
                     `full-${Date.now()}`
                 )
+                await this.nodeRepository.replaceNetworkTopology(topology)
                 await this.analyzeContractStreams(topology, this.subscribeGate)
             } catch (e) {
                 logger.error('Error', { err: e })
@@ -256,10 +261,15 @@ export class Crawler {
                 )
                 return (streamPartitions.map((sp) => sp.deliveryLayerNeighbors)).flat()
             }, `stream-${payload.streamId}-${Date.now()}`)
+            // TODO could add new nodes and neighbors to NodeRepository?
             await this.analyzeStream(payload.streamId, payload.metadata, topology, this.subscribeGate!)
         } catch (e: any) {
             logger.error(`Failed to handle new stream ${payload.streamId}`, e)
         }
+    }
+
+    getNodeId(): Promise<DhtAddress> {
+        return this.client.getNodeId()
     }
 
     stop(): void {

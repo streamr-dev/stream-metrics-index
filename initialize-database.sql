@@ -13,3 +13,7 @@ CREATE TABLE IF NOT EXISTS streams (
     INDEX streams_subscriberCount (subscriberCount)
 );
 
+CREATE TABLE IF NOT EXISTS nodes (
+    id CHAR(40) NOT NULL PRIMARY KEY,
+    ipAddress VARCHAR(15)
+);

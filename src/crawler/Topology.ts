@@ -3,10 +3,12 @@ import { StreamPartIDUtils } from '@streamr/protocol'
 import { NodeInfo } from '@streamr/trackerless-network'
 import { Multimap } from '@streamr/utils'
 import { DhtAddress, StreamPartID } from 'streamr-client'
+import { numberToIpv4 } from '../utils'
 
-interface Node {
+export interface Node {
     id: DhtAddress
     streamPartNeighbors: Multimap<StreamPartID, DhtAddress>
+    ipAddress?: string
 }
 
 export class Topology {
@@ -26,7 +28,8 @@ export class Topology {
             const nodeId = getNodeIdFromPeerDescriptor(info.peerDescriptor)
             this.nodes.set(nodeId, {
                 id: nodeId,
-                streamPartNeighbors
+                streamPartNeighbors,
+                ipAddress: (info.peerDescriptor.ipAddress !== undefined) ? numberToIpv4(info.peerDescriptor.ipAddress) : undefined
             })
         }
     }

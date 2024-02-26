@@ -3,6 +3,15 @@ import { Inject, Service } from 'typedi'
 import { Summary } from '../entities/Summary'
 import { ConnectionPool } from './ConnectionPool'
 
+interface StreamSummaryRow extends RowDataPacket {
+    streamCount: number
+    messagesPerSecond: number
+}
+
+interface NodeSummaryRow extends RowDataPacket {
+    nodeCount: number
+} 
+
 @Service()
 export class SummaryRepository {
 
@@ -15,13 +24,15 @@ export class SummaryRepository {
     }
 
     async getSummary(): Promise<Summary> {
-        interface SummaryRow extends RowDataPacket {
-            streamCount: number
-            messagesPerSecond: number
-        } 
-        const rows = await this.connectionPool.queryOrExecute<SummaryRow[]>(
+        const streamSummaryRows = await this.connectionPool.queryOrExecute<StreamSummaryRow[]>(
             'SELECT count(*) as streamCount, sum(messagesPerSecond) as messagesPerSecond FROM streams'
         )
-        return rows[0]
+        const nodeSummaryRows = await this.connectionPool.queryOrExecute<NodeSummaryRow[]>(
+            'SELECT count(*) as nodeCount FROM nodes'
+        )
+        return {
+            ...streamSummaryRows[0],
+            ...nodeSummaryRows[0]
+        }
     }
 }

@@ -93,6 +93,10 @@ export class StreamrClientFacade {
         return this.client.getConfig().network.controlLayer.entryPoints!.map(peerDescriptorTranslator)
     }
 
+    async getNodeId(): Promise<DhtAddress> {
+        return await this.client.getNodeId()
+    }
+
     async destroy(): Promise<void> {
         await this.client.destroy()
     }
