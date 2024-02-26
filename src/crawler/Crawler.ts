@@ -106,11 +106,11 @@ export class Crawler {
     private onStreamCreated?: (payload: StreamCreationEvent) => Promise<void>
 
     constructor(
-        @Inject() database: StreamRepository,
+        @Inject() streamRepository: StreamRepository,
         @Inject() client: StreamrClientFacade,
         @Inject(CONFIG_TOKEN) config: Config
     ) {
-        this.streamRepository = database
+        this.streamRepository = streamRepository
         this.client = client
         this.config = config
     }
