@@ -34,7 +34,7 @@ const RECOVERY_DELAY = 5 * 60 * 1000  // TODO from config
 
 const createPeerDescriptorLogOutput = (peerDescriptor: PeerDescriptor) => {
     return {
-        id: getNodeIdFromPeerDescriptor(peerDescriptor),
+        nodeId: getNodeIdFromPeerDescriptor(peerDescriptor),
         type: peerDescriptor.type,
         udp: peerDescriptor.udp,
         tcp: peerDescriptor.tcp,
