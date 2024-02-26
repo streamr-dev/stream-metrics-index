@@ -3,21 +3,23 @@ import 'reflect-metadata'
 import { NodeType, createRandomDhtAddress, getDhtAddressFromRaw, getRawFromDhtAddress } from '@streamr/dht'
 import { NetworkNode, createNetworkNode } from '@streamr/trackerless-network'
 import { setAbortableInterval, waitForCondition } from '@streamr/utils'
+import { range, uniq } from 'lodash'
 import StreamrClient, { CONFIG_TEST, NetworkNodeType, PeerDescriptor, StreamID, StreamPermission, StreamrClientConfig } from 'streamr-client'
 import Container from 'typedi'
 import { CONFIG_TOKEN } from '../src/Config'
 import { APIServer } from '../src/api/APIServer'
 import { Crawler } from '../src/crawler/Crawler'
+import { Node } from '../src/entities/Node'
 import { Stream } from '../src/entities/Stream'
 import { createDatabase, queryAPI } from '../src/utils'
 import { TEST_DATABASE_NAME, dropTestDatabaseIfExists } from './utils'
-import { range } from 'lodash'
 
 const PUBLISHER_PRIVATE_KEY = '0x0000000000000000000000000000000000000000000000000000000000000001'
 const SUBSCRIBER_PRIVATE_KEY = '0x0000000000000000000000000000000000000000000000000000000000000002'
 const ENTRY_POINT_PORT = 40501
 const PARTITION_COUNT = 3
 const ACTIVE_PARTITION_COUNT = 2
+const DOCKER_DEV_LOOPBACK_IP_ADDRESS = '10.200.10.1'
 
 const startEntryPoint = async (): Promise<NetworkNode> => {
     const peerDescriptor = {
@@ -71,7 +73,7 @@ const createClient = (privateKey: string, entryPointPeerDescriptor: PeerDescript
     })
 }
 
-const getStreamMetrics = async (id: string, apiPort: number): Promise<Stream | undefined> => {
+const queryStreamMetrics = async (id: string, apiPort: number): Promise<Stream | undefined> => {
     const query = `{
         streams(searchTerm: "${id}" pageSize: 1) {
             items {
@@ -91,6 +93,19 @@ const getStreamMetrics = async (id: string, apiPort: number): Promise<Stream | u
     } else {
         return undefined
     }
+}
+
+const queryNodes = async (apiPort: number): Promise<Node[]> => {
+    const query = `{
+        nodes {
+            items {
+                id
+                ipAddress
+            }
+        }
+    }`
+    const response = await queryAPI(query, apiPort)
+    return response['items']
 }
 
 export const nextValue = async <T>(source: AsyncIterator<T>): Promise<T | undefined> => {
@@ -181,7 +196,7 @@ describe('end-to-end', () => {
         crawler = Container.get(Crawler)
         await crawler.start(1)
 
-        const streamMetrics1 = (await getStreamMetrics(existingStream.id, apiPort))!
+        const streamMetrics1 = (await queryStreamMetrics(existingStream.id, apiPort))!
         expect(streamMetrics1.id).toBe(existingStream.id)
         expect(streamMetrics1.description).toBe('mock-description')
         expect(streamMetrics1.peerCount).toBe(2)
@@ -189,14 +204,23 @@ describe('end-to-end', () => {
         expect(streamMetrics1.publisherCount).toBe(1)
         expect(streamMetrics1.subscriberCount).toBe(2)
 
+        const nodes = (await queryNodes(apiPort))!
+        expect(nodes.map((n) => n.id)).toIncludeSameMembers([
+            await publisher.getNodeId(),
+            await subscriber.getNodeId(),
+            entryPoint.getNodeId(),
+            await crawler.getNodeId()
+        ])
+        expect(uniq(nodes.map((n) => n.ipAddress))).toEqual([DOCKER_DEV_LOOPBACK_IP_ADDRESS])
+
         const newStream = await createTestStream()
         await startPublisherAndSubscriberForStream(newStream.id, publishingAbortControler.signal)
 
         await waitForCondition(async () => {
-            const metrics = await getStreamMetrics(newStream.id, apiPort)
+            const metrics = await queryStreamMetrics(newStream.id, apiPort)
             return (metrics !== undefined) && (metrics.peerCount >= 2)
         }, 20 * 1000, 1000)
-        const streamMetrics2 = (await getStreamMetrics(newStream.id, apiPort))!
+        const streamMetrics2 = (await queryStreamMetrics(newStream.id, apiPort))!
         expect(streamMetrics2.id).toBe(newStream.id)
         expect(streamMetrics2.description).toBe('mock-description')
         expect(streamMetrics2.peerCount).toBe(2)

@@ -10,6 +10,7 @@ import { Container, Inject, Service } from 'typedi'
 import { Config, CONFIG_TOKEN } from '../Config'
 import { StreamResolver } from './StreamResolver'
 import { SummaryResolver } from './SummaryResolver'
+import { NodeResolver } from './NodeResolver'
 
 const logger = new Logger(module)
 
@@ -29,7 +30,7 @@ export class APIServer {
 
     async start(): Promise<void> {
         const schema = await buildSchema({
-            resolvers: [StreamResolver, SummaryResolver],
+            resolvers: [StreamResolver, NodeResolver, SummaryResolver],
             container: Container,
             validate: false
         })

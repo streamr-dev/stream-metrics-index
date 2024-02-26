@@ -1,6 +1,8 @@
-import { Pool, RowDataPacket, createPool } from 'mysql2/promise'
+import { Pool, RowDataPacket, createPool, PoolConnection } from 'mysql2/promise'
 import { Inject, Service } from 'typedi'
 import { CONFIG_TOKEN, Config } from '../Config'
+
+const DEFAULT_PAGE_SIZE = 100
 
 @Service()
 export class ConnectionPool {
@@ -19,7 +21,7 @@ export class ConnectionPool {
     }
 
     // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-    async queryOrExecute<T extends RowDataPacket[]>(sql: string, params?: any): Promise<T> {
+    async queryOrExecute<T extends RowDataPacket[]>(sql: string, params?: any[]): Promise<T> {
         const connection = await this.delegatee.getConnection()
         try {
             const [ rows ] = await connection.query<T>(
@@ -30,6 +32,28 @@ export class ConnectionPool {
         } finally {
             connection.release()
         }
+    }
+
+    async queryPaginated<T extends RowDataPacket[]>(
+        sql: string, params: any[], pageSize?: number, cursor?: string
+    ): Promise<{ items: T, cursor: string | null }> {
+        const limit = pageSize ?? DEFAULT_PAGE_SIZE
+        // The cursor is currently just an offset to the result set. We can later implement
+        // enhanced cursor functionality if needed (e.g. cursor can be the last item of
+        // the result set or a token which references to a stateful cache).
+        const offset = (cursor !== undefined) ? parseInt(cursor, 10) : 0
+        const rows = await this.queryOrExecute<T>(
+            `${sql} LIMIT ? OFFSET ?`,
+            [...params, limit, offset]
+        )
+        return {
+            items: rows,
+            cursor: (rows.length === pageSize) ? String(offset + rows.length) : null
+        }
+    }
+
+    async getConnection(): Promise<PoolConnection> {
+        return this.delegatee.getConnection()
     }
 
     async destroy(): Promise<void> {

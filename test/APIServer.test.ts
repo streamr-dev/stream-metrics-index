@@ -8,6 +8,10 @@ import { StreamrClientFacade } from '../src/StreamrClientFacade'
 import { StreamRepository } from '../src/repository/StreamRepository'
 import { createDatabase, queryAPI } from '../src/utils'
 import { dropTestDatabaseIfExists, TEST_DATABASE_NAME } from './utils'
+import { NodeRepository } from '../src/repository/NodeRepository'
+import { createRandomDhtAddress } from '@streamr/dht'
+import { Multimap } from '@streamr/utils'
+import { StreamPartIDUtils } from '@streamr/protocol'
 
 describe('APIServer', () => {
 
@@ -240,8 +244,8 @@ describe('APIServer', () => {
     })
 
     it('summary', async () => {
-        const repository = Container.get(StreamRepository)
-        await repository.replaceStream({
+        const streamRepository = Container.get(StreamRepository)
+        await streamRepository.replaceStream({
             id: 'id-1',
             description: '',
             peerCount: 10,
@@ -249,7 +253,7 @@ describe('APIServer', () => {
             publisherCount: null,
             subscriberCount: null
         })
-        await repository.replaceStream({
+        await streamRepository.replaceStream({
             id: 'id-2',
             description: '',
             peerCount: 20,
@@ -257,15 +261,36 @@ describe('APIServer', () => {
             publisherCount: null,
             subscriberCount: null
         })
+        const streamPartId = StreamPartIDUtils.parse('stream#0')
+        const nodeRepository = Container.get(NodeRepository)
+        const node1 = createRandomDhtAddress()
+        const node2 = createRandomDhtAddress()
+        const streamPartNeighbors1 = new Multimap()
+        streamPartNeighbors1.add(streamPartId, node2)
+        const streamPartNeighbors2 = new Multimap()
+        streamPartNeighbors2.add(streamPartId, node1)
+        await nodeRepository.replaceNetworkTopology({
+            getNodes: () => [{
+                id: node1,
+                streamPartNeighbors: streamPartNeighbors1,
+                ipAddress: ''
+            }, {
+                id: node2,
+                streamPartNeighbors: streamPartNeighbors2,
+                ipAddress: ''
+            }]
+        } as any)
         const summary = await queryAPI(`{
             summary {
                 streamCount
                 messagesPerSecond
+                nodeCount
             }
         }`, apiPort)
         expect(summary).toEqual({
             streamCount: 2,
-            messagesPerSecond: 300
+            messagesPerSecond: 300,
+            nodeCount: 2
         })
     })
 })

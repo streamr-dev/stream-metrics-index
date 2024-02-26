@@ -7,4 +7,6 @@ export class Summary {
     streamCount!: number
     @Field(() => Float)
     messagesPerSecond!: number
+    @Field(() => Int)
+    nodeCount!: number
 }
