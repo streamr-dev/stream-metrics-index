@@ -1,7 +1,6 @@
 {
     "api": {
-        "port": 4001,
-        "graphiql": true
+        "port": 4001
     },
     "crawler": {
         "subscribeDuration": 10000,
