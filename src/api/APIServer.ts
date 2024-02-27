@@ -2,7 +2,7 @@ import { Logger } from '@streamr/utils'
 import cors from 'cors'
 import { once } from 'events'
 import express from 'express'
-import { graphqlHTTP } from 'express-graphql'
+import { createHandler } from 'graphql-http/lib/use/express'
 import { Server } from 'http'
 import { AddressInfo } from 'net'
 import { buildSchema } from 'type-graphql'
@@ -38,10 +38,7 @@ export class APIServer {
         app.use(cors())
         app.use(
             ENDPOINT,
-            graphqlHTTP({
-                schema: schema,
-                graphiql: this.config.api.graphiql
-            })
+            createHandler({ schema })
         )
         const port = this.config.api.port
         this.httpServer = app.listen(port)
