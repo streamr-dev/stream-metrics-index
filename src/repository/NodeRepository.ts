@@ -39,7 +39,7 @@ export class NodeRepository {
             `SELECT id, ipAddress FROM nodes`,
             whereClauses
         )
-        return await this.connectionPool.queryPaginated<NodeRow[]>(sql, params)
+        return this.connectionPool.queryPaginated<NodeRow[]>(sql, params)
     }
 
     async replaceNetworkTopology(topology: Topology): Promise<void> {
