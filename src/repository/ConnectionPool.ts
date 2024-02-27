@@ -4,6 +4,11 @@ import { CONFIG_TOKEN, Config } from '../Config'
 
 const DEFAULT_PAGE_SIZE = 100
 
+export interface PaginatedListFragment<T extends RowDataPacket[]> {
+    items: T
+    cursor: string | null
+}
+
 @Service()
 export class ConnectionPool {
 
@@ -36,7 +41,7 @@ export class ConnectionPool {
 
     async queryPaginated<T extends RowDataPacket[]>(
         sql: string, params: any[], pageSize?: number, cursor?: string
-    ): Promise<{ items: T, cursor: string | null }> {
+    ): Promise<PaginatedListFragment<T>> {
         const limit = pageSize ?? DEFAULT_PAGE_SIZE
         // The cursor is currently just an offset to the result set. We can later implement
         // enhanced cursor functionality if needed (e.g. cursor can be the last item of

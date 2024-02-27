@@ -2,13 +2,10 @@ import { Logger } from '@streamr/utils'
 import { RowDataPacket } from 'mysql2'
 import { Inject, Service } from 'typedi'
 import { Topology } from '../crawler/Topology'
-import { Nodes } from '../entities/Node'
 import { createSqlQuery } from '../utils'
-import { ConnectionPool } from './ConnectionPool'
-import { NodesQueryFields } from '../api/NodeResolver'
-import { getLocationFromIpAddress } from '../location'
+import { ConnectionPool, PaginatedListFragment } from './ConnectionPool'
 
-interface NodeRow extends RowDataPacket {
+export interface NodeRow extends RowDataPacket {
     id: string
     ipAddress: string | null
 }
@@ -27,11 +24,10 @@ export class NodeRepository {
     }
 
     async getNodes(
-        requestedFields: Set<NodesQueryFields>,
         ids?: string[],
         pageSize?: number,
         cursor?: string
-    ): Promise<Nodes> {
+    ): Promise<PaginatedListFragment<NodeRow[]>> {
         logger.info('Query: getNodes', { ids, pageSize, cursor })
         const whereClauses = []
         const params = []
@@ -43,19 +39,7 @@ export class NodeRepository {
             `SELECT id, ipAddress FROM nodes`,
             whereClauses
         )
-        const rows = await this.connectionPool.queryPaginated<NodeRow[]>(sql, params)
-        const items: Nodes['items'] = []
-        const includeLocation = requestedFields.has('location')
-        for (const row of rows.items) {
-            items.push({
-                ...row,
-                location: (includeLocation && (row.ipAddress !== null)) ? (getLocationFromIpAddress(row.ipAddress) ?? null) : null
-            })
-        }
-        return {
-            items,
-            cursor: rows.cursor
-        }
+        return await this.connectionPool.queryPaginated<NodeRow[]>(sql, params)
     }
 
     async replaceNetworkTopology(topology: Topology): Promise<void> {

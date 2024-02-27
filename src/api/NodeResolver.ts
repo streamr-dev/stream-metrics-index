@@ -1,12 +1,11 @@
-import { Arg, Info, Int, Query, Resolver } from 'type-graphql'
+import { DeepOmit } from 'ts-essentials'
+import { Arg, FieldResolver, Int, Query, Resolver, Root } from 'type-graphql'
 import { Inject, Service } from 'typedi'
-import { Nodes } from '../entities/Node'
+import { Location, Node, Nodes } from '../entities/Node'
 import { NodeRepository } from '../repository/NodeRepository'
-import { FieldNode, GraphQLResolveInfo } from 'graphql'
+import { getLocationFromIpAddress } from '../location'
 
-export type NodesQueryFields = 'location'
-
-@Resolver()
+@Resolver(() => Node)
 @Service()
 export class NodeResolver {
 
@@ -20,19 +19,20 @@ export class NodeResolver {
 
     @Query(() => Nodes)
     async nodes(
-        @Info() info: GraphQLResolveInfo,
         @Arg("ids", () => [String], { nullable: true }) ids?: string[],
         @Arg("pageSize", () => Int, { nullable: true }) pageSize?: number,
         @Arg("cursor", { nullable: true }) cursor?: string,
-    ): Promise<Nodes> {
-        const nodesField = info.fieldNodes[0]
-        const itemsField = nodesField.selectionSet!.selections[0] as FieldNode
-        const requestedFields = itemsField.selectionSet!.selections
-        return this.repository.getNodes(
-            new Set<NodesQueryFields>(requestedFields.map((f: any) => f.name.value)),
-            ids,
-            pageSize,
-            cursor
-        )
+    ): Promise<DeepOmit<Nodes, { items: { location: true }[] }>> {
+        return this.repository.getNodes(ids, pageSize, cursor)
+    }
+
+    // eslint-disable-next-line class-methods-use-this
+    @FieldResolver()
+    location(@Root() node: Node): Location | null {
+        if (node.ipAddress !== null) {
+            return getLocationFromIpAddress(node.ipAddress) ?? null
+        } else {
+            return null
+        }
     }
 }
