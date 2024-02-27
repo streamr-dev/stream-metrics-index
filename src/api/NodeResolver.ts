@@ -22,7 +22,7 @@ export class NodeResolver {
         @Arg("ids", () => [String], { nullable: true }) ids?: string[],
         @Arg("pageSize", () => Int, { nullable: true }) pageSize?: number,
         @Arg("cursor", { nullable: true }) cursor?: string,
-    ): Promise<DeepOmit<Nodes, { items: { location: true }[] }>> {
+    ): Promise<DeepOmit<Nodes, { items: { location: never }[] }>> {
         return this.repository.getNodes(ids, pageSize, cursor)
     }
 
