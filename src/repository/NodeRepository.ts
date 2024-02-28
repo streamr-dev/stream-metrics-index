@@ -102,12 +102,31 @@ export class NodeRepository {
     }
 
     async getNeighbors(
-        streamPartId: StreamPartID,
+        nodeId?: DhtAddress,
+        streamPartId?: StreamPartID,
+        pageSize?: number,
+        cursor?: string
     ): Promise<Neighbors> {
-        logger.info('Query: getNeighbors', { streamPartId })
+        logger.info('Query: getNeighbors', { nodeId, streamPartId })
+        const whereClauses = []
+        const params = []
+        if (nodeId !== undefined) {
+            whereClauses.push('nodeId1 = ? OR nodeId2 = ?')
+            params.push(nodeId, nodeId)
+        }
+        if (streamPartId !== undefined) {
+            whereClauses.push('streamPartId = ?')
+            params.push(streamPartId)
+        }
+        const sql = createSqlQuery(
+            'SELECT streamPartId, nodeId1, nodeId2 FROM neighbors',
+            whereClauses
+        )
         return this.connectionPool.queryPaginated<NeighborRow[]>(
-            `SELECT nodeId1, nodeId2 FROM neighbors WHERE streamPartId = ?`,
-            [streamPartId]
+            sql,
+            params,
+            pageSize,
+            cursor
         )
     }
 

@@ -58,6 +58,8 @@ export class NeighborInput {
 @ObjectType()
 export class Neighbor {
     @Field()
+    streamPartId!: string
+    @Field()
     nodeId1!: string
     @Field()
     nodeId2!: string

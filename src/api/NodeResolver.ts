@@ -6,6 +6,7 @@ import { Inject, Service } from 'typedi'
 import { Location, NeighborInput, Neighbors, Node, Nodes } from '../entities/Node'
 import { getLocationFromIpAddress } from '../location'
 import { NodeRepository } from '../repository/NodeRepository'
+import { DhtAddress } from 'streamr-client'
 
 @Resolver(() => Node)
 @Service()
@@ -26,7 +27,7 @@ export class NodeResolver {
         @Arg("streamPart", { nullable: true }) streamPart?: string,
         @Arg("neighbor", { nullable: true }) neighbor?: NeighborInput,
         @Arg("pageSize", () => Int, { nullable: true }) pageSize?: number,
-        @Arg("cursor", { nullable: true }) cursor?: string,
+        @Arg("cursor", { nullable: true }) cursor?: string
     ): Promise<DeepOmit<Nodes, { items: { location: never }[] }>> {
         const nodesField = info.fieldNodes[0]
         const itemsField = nodesField.selectionSet!.selections[0] as FieldNode
@@ -43,9 +44,17 @@ export class NodeResolver {
 
     @Query(() => Neighbors)
     async neighbors(
-        @Arg("streamPart", { nullable: false }) streamPart: string,
+        @Arg("node", { nullable: true }) nodeId?: DhtAddress,
+        @Arg("streamPart", { nullable: true }) streamPart?: string,
+        @Arg("pageSize", () => Int, { nullable: true }) pageSize?: number,
+        @Arg("cursor", { nullable: true }) cursor?: string
     ): Promise<Neighbors> {
-        return this.repository.getNeighbors(StreamPartIDUtils.parse(streamPart))
+        return this.repository.getNeighbors(
+            (nodeId !== undefined) ? nodeId as DhtAddress : undefined,
+            (streamPart !== undefined) ? StreamPartIDUtils.parse(streamPart) : undefined,
+            pageSize,
+            cursor
+        )
     }
 
     // eslint-disable-next-line class-methods-use-this
