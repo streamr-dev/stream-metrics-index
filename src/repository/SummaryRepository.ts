@@ -24,10 +24,10 @@ export class SummaryRepository {
     }
 
     async getSummary(): Promise<Summary> {
-        const streamSummaryRows = await this.connectionPool.queryOrExecute<StreamSummaryRow[]>(
+        const streamSummaryRows = await this.connectionPool.queryOrExecute<StreamSummaryRow>(
             'SELECT count(*) as streamCount, sum(messagesPerSecond) as messagesPerSecond FROM streams'
         )
-        const nodeSummaryRows = await this.connectionPool.queryOrExecute<NodeSummaryRow[]>(
+        const nodeSummaryRows = await this.connectionPool.queryOrExecute<NodeSummaryRow>(
             'SELECT count(*) as nodeCount FROM nodes'
         )
         return {

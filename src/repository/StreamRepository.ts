@@ -71,7 +71,7 @@ export class StreamRepository {
             whereClauses,
             StreamRepository.formOrderByExpression(orderBy ?? StreamOrderBy.ID, orderDirection ?? OrderDirection.ASC)
         )
-        return this.connectionPool.queryPaginated<StreamRow[]>(sql, params, pageSize, cursor)
+        return this.connectionPool.queryPaginated<StreamRow>(sql, params, pageSize, cursor)
     }
 
     private static formOrderByExpression(orderBy: StreamOrderBy, orderDirection: OrderDirection) {
@@ -110,7 +110,7 @@ export class StreamRepository {
     }
 
     async getAllStreams(): Promise<{ id: string, crawlTimestamp: number }[]> {
-        const rows = await this.connectionPool.queryOrExecute<StreamRow[]>(
+        const rows = await this.connectionPool.queryOrExecute<StreamRow>(
             'SELECT id, crawlTimestamp FROM streams'
         )
         return rows.map((r: StreamRow) => {

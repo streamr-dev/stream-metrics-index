@@ -27,7 +27,7 @@ export class NodeRepository {
         ids?: string[],
         pageSize?: number,
         cursor?: string
-    ): Promise<PaginatedListFragment<NodeRow[]>> {
+    ): Promise<PaginatedListFragment<NodeRow>> {
         logger.info('Query: getNodes', { ids, pageSize, cursor })
         const whereClauses = []
         const params = []
@@ -39,7 +39,7 @@ export class NodeRepository {
             `SELECT id, ipAddress FROM nodes`,
             whereClauses
         )
-        return this.connectionPool.queryPaginated<NodeRow[]>(sql, params)
+        return this.connectionPool.queryPaginated<NodeRow>(sql, params)
     }
 
     async replaceNetworkTopology(topology: Topology): Promise<void> {
