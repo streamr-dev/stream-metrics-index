@@ -4,11 +4,11 @@ import { RowDataPacket } from 'mysql2'
 import { StreamPartID } from 'streamr-client'
 import { Inject, Service } from 'typedi'
 import { Topology } from '../crawler/Topology'
-import { NeighborInput, Neighbors, Nodes, StreamPartNeigbors } from '../entities/Node'
+import { NeighborInput, Neighbors, StreamPartNeigbors } from '../entities/Node'
 import { createSqlQuery } from '../utils'
-import { ConnectionPool } from './ConnectionPool'
+import { ConnectionPool, PaginatedListFragment } from './ConnectionPool'
 
-interface NodeRow extends RowDataPacket {
+export interface NodeRow extends RowDataPacket {
     id: string
     ipAddress: string | null
 }
@@ -39,7 +39,7 @@ export class NodeRepository {
         neighbor?: NeighborInput,
         pageSize?: number,
         cursor?: string
-    ): Promise<Nodes> {
+    ): Promise<PaginatedListFragment<(NodeRow & { neighbors: StreamPartNeigbors[] })[]>> {
         logger.info('Query: getNodes', { ids, streamPartId, neighbor, pageSize, cursor })
         const whereClauses = []
         const params = []
@@ -66,13 +66,13 @@ export class NodeRepository {
             whereClauses
         )
         const rows = await this.connectionPool.queryPaginated<NodeRow[]>(sql, params)
-        const items: Nodes['items'] = []
+        const items: (NodeRow & { neighbors: StreamPartNeigbors[] })[] = []
         const includeNeighbors = requestedFields.has('neighbors')
         for (const row of rows.items) {
             items.push({
                 ...row,
                 neighbors: includeNeighbors ? await this.getStreamPartNeighbors(row.id as DhtAddress) : [],
-            })
+            } as any)
         }
         return {
             items,

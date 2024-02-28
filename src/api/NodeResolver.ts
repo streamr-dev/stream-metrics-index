@@ -1,11 +1,13 @@
 import { StreamPartIDUtils } from '@streamr/protocol'
 import { FieldNode, GraphQLResolveInfo } from 'graphql'
-import { Arg, Info, Int, Query, Resolver } from 'type-graphql'
+import { DeepOmit } from 'ts-essentials'
+import { Arg, FieldResolver, Info, Int, Query, Resolver, Root } from 'type-graphql'
 import { Inject, Service } from 'typedi'
-import { NeighborInput, Neighbors, Nodes } from '../entities/Node'
+import { Location, NeighborInput, Neighbors, Node, Nodes } from '../entities/Node'
+import { getLocationFromIpAddress } from '../location'
 import { NodeRepository } from '../repository/NodeRepository'
 
-@Resolver()
+@Resolver(() => Node)
 @Service()
 export class NodeResolver {
 
@@ -25,7 +27,7 @@ export class NodeResolver {
         @Arg("neighbor", { nullable: true }) neighbor?: NeighborInput,
         @Arg("pageSize", () => Int, { nullable: true }) pageSize?: number,
         @Arg("cursor", { nullable: true }) cursor?: string,
-    ): Promise<Nodes> {
+    ): Promise<DeepOmit<Nodes, { items: { location: never }[] }>> {
         const nodesField = info.fieldNodes[0]
         const itemsField = nodesField.selectionSet!.selections[0] as FieldNode
         const requestedFields = itemsField.selectionSet!.selections
@@ -44,5 +46,15 @@ export class NodeResolver {
         @Arg("streamPart", { nullable: false }) streamPart: string,
     ): Promise<Neighbors> {
         return this.repository.getNeighbors(StreamPartIDUtils.parse(streamPart))
+    }
+
+    // eslint-disable-next-line class-methods-use-this
+    @FieldResolver()
+    location(@Root() node: Node): Location | null {
+        if (node.ipAddress !== null) {
+            return getLocationFromIpAddress(node.ipAddress) ?? null
+        } else {
+            return null
+        }
     }
 }

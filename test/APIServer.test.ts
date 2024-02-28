@@ -28,11 +28,11 @@ const storeTestTopology = async (
         getNodes: () => [{
             id: node1,
             streamPartNeighbors: streamPartNeighbors1,
-            ipAddress: ''
+            ipAddress: '123.1.2.3'
         }, {
             id: node2,
             streamPartNeighbors: streamPartNeighbors2,
-            ipAddress: ''
+            ipAddress: '123.1.2.3'
         }]
     } as any)
 }
@@ -284,6 +284,12 @@ describe('APIServer', () => {
                     items {
                         id
                         ipAddress
+                        location {
+                            latitude
+                            longitude
+                            city
+                            country
+                        }
                         neighbors {
                             streamPartId
                             nodeIds
@@ -294,7 +300,13 @@ describe('APIServer', () => {
             const node = response['items'][0]
             expect(node).toEqual({
                 id: node1,
-                ipAddress: '',
+                ipAddress: '123.1.2.3',
+                location: {
+                    city: 'Nagoya',
+                    country: 'JP',
+                    latitude: 35.1926,
+                    longitude: 136.906
+                },
                 neighbors: [{
                     streamPartId: TOPOLOGY_STREAM_PART_ID,
                     nodeIds: [node2]
