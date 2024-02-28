@@ -296,10 +296,6 @@ describe('APIServer', () => {
                             city
                             country
                         }
-                        neighbors {
-                            streamPartId
-                            nodeIds
-                        }
                     }
                 }
             }`, apiPort)
@@ -312,11 +308,7 @@ describe('APIServer', () => {
                     country: 'JP',
                     latitude: 35.1926,
                     longitude: 136.906
-                },
-                neighbors: [{
-                    streamPartId: StreamPartIDUtils.parse('stream#0'),
-                    nodeIds: [node2]
-                }]
+                }
             })
         })
     }) 

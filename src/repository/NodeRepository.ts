@@ -4,7 +4,7 @@ import { RowDataPacket } from 'mysql2'
 import { StreamPartID } from 'streamr-client'
 import { Inject, Service } from 'typedi'
 import { Topology } from '../crawler/Topology'
-import { Neighbors, StreamPartNeigbors } from '../entities/Node'
+import { Neighbors } from '../entities/Node'
 import { createSqlQuery } from '../utils'
 import { ConnectionPool, PaginatedListFragment } from './ConnectionPool'
 
@@ -33,11 +33,10 @@ export class NodeRepository {
     }
 
     async getNodes(
-        requestedFields: Set<string>,
         ids?: string[],
         pageSize?: number,
         cursor?: string
-    ): Promise<PaginatedListFragment<(NodeRow & { neighbors: StreamPartNeigbors[] })[]>> {
+    ): Promise<PaginatedListFragment<NodeRow[]>> {
         logger.info('Query: getNodes', { ids, pageSize, cursor })
         const whereClauses = []
         const params = []
@@ -49,40 +48,7 @@ export class NodeRepository {
             `SELECT id, ipAddress FROM nodes`,
             whereClauses
         )
-        const rows = await this.connectionPool.queryPaginated<NodeRow[]>(sql, params)
-        const items: (NodeRow & { neighbors: StreamPartNeigbors[] })[] = []
-        const includeNeighbors = requestedFields.has('neighbors')
-        for (const row of rows.items) {
-            items.push({
-                ...row,
-                neighbors: includeNeighbors ? await this.getStreamPartNeighbors(row.id as DhtAddress) : [],
-            } as any)
-        }
-        return {
-            items,
-            cursor: rows.cursor
-        }
-    }
-
-    private async getStreamPartNeighbors(id: DhtAddress): Promise<StreamPartNeigbors[]> {
-        const rows = await this.connectionPool.queryOrExecute<NeighborRow[]>(
-            `SELECT streamPartId, nodeId1, nodeId2 FROM neighbors WHERE nodeId1 = ? OR nodeId2 = ?`,
-            [id, id]
-        )
-        const result: StreamPartNeigbors[] = []
-        for (const row of rows) {
-            const otherNode = (row.nodeId1 === id) ? row.nodeId2 : row.nodeId1
-            const item = result.find((i) => i.streamPartId === row.streamPartId)
-            if (item !== undefined) {
-                item.nodeIds.push(otherNode)
-            } else {
-                result.push({
-                    streamPartId: row.streamPartId,
-                    nodeIds: [otherNode]
-                })
-            }
-        }
-        return result
+        return this.connectionPool.queryPaginated<NodeRow[]>(sql, params)
     }
 
     async getNeighbors(

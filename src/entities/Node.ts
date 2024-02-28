@@ -9,18 +9,6 @@ export class Node {
     ipAddress!: string | null
     @Field(() => Location, { nullable: true })
     location!: Location | null
-    @Field(() => [StreamPartNeigbors])
-    neighbors!: StreamPartNeigbors[]
-}
-
-/* eslint-disable indent */
-@ObjectType()
-export class StreamPartNeigbors {
-    @Field(() => String, { nullable: false })
-    streamPartId!: string | null
-    // TODO could return Node entities?
-    @Field(() => [String])
-    nodeIds!: string[]
 }
 
 /* eslint-disable indent */

@@ -1,12 +1,11 @@
 import { StreamPartIDUtils } from '@streamr/protocol'
-import { FieldNode, GraphQLResolveInfo } from 'graphql'
+import { DhtAddress } from 'streamr-client'
 import { DeepOmit } from 'ts-essentials'
-import { Arg, FieldResolver, Info, Int, Query, Resolver, Root } from 'type-graphql'
+import { Arg, FieldResolver, Int, Query, Resolver, Root } from 'type-graphql'
 import { Inject, Service } from 'typedi'
 import { Location, Neighbors, Node, Nodes } from '../entities/Node'
 import { getLocationFromIpAddress } from '../location'
 import { NodeRepository } from '../repository/NodeRepository'
-import { DhtAddress } from 'streamr-client'
 
 @Resolver(() => Node)
 @Service()
@@ -22,16 +21,11 @@ export class NodeResolver {
 
     @Query(() => Nodes)
     async nodes(
-        @Info() info: GraphQLResolveInfo,
         @Arg("ids", () => [String], { nullable: true }) ids?: string[],
         @Arg("pageSize", () => Int, { nullable: true }) pageSize?: number,
         @Arg("cursor", { nullable: true }) cursor?: string
     ): Promise<DeepOmit<Nodes, { items: { location: never }[] }>> {
-        const nodesField = info.fieldNodes[0]
-        const itemsField = nodesField.selectionSet!.selections[0] as FieldNode
-        const requestedFields = itemsField.selectionSet!.selections
         return this.repository.getNodes(
-            new Set(requestedFields.map((f: any) => f.name.value)),
             ids,
             pageSize,
             cursor
