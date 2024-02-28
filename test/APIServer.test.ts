@@ -319,30 +319,6 @@ describe('APIServer', () => {
                 }]
             })
         })
-
-        it('streamPart', async () => {
-            const response = await queryAPI(`{
-                nodes(streamPart: "stream#0") {
-                    items {
-                        id
-                    }
-                }
-            }`, apiPort)
-            const nodes = response['items']
-            expect(nodes.map((n: any) => n.id)).toIncludeSameMembers([node1, node2])
-        })
-
-        it('neighbors of one node in stream part', async () => {
-            const response = await queryAPI(`{
-                nodes(neighbor: {node: "${node1}", streamPart: "stream#0"}) {
-                    items {
-                        id
-                    }
-                }
-            }`, apiPort)
-            const nodes = response['items']
-            expect(nodes.map((n: any) => n.id)).toEqual([node2])
-        })
     }) 
 
     describe('neighbors', () => {

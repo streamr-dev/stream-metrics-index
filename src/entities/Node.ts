@@ -1,4 +1,4 @@
-import { Field, Float, InputType, ObjectType } from 'type-graphql'
+import { Field, Float, ObjectType } from 'type-graphql'
 
 /* eslint-disable indent */
 @ObjectType()
@@ -43,15 +43,6 @@ export class Nodes {
     items!: Node[]
     @Field(() => String, { nullable: true })
     cursor!: string | null
-}
-
-/* eslint-disable indent */
-@InputType()
-export class NeighborInput {
-    @Field(() => String, { nullable: false })
-    node!: string | null
-    @Field(() => String, { nullable: false })
-    streamPart!: string | null
 }
 
 /* eslint-disable indent */

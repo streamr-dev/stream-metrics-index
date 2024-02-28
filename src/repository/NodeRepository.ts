@@ -4,7 +4,7 @@ import { RowDataPacket } from 'mysql2'
 import { StreamPartID } from 'streamr-client'
 import { Inject, Service } from 'typedi'
 import { Topology } from '../crawler/Topology'
-import { NeighborInput, Neighbors, StreamPartNeigbors } from '../entities/Node'
+import { Neighbors, StreamPartNeigbors } from '../entities/Node'
 import { createSqlQuery } from '../utils'
 import { ConnectionPool, PaginatedListFragment } from './ConnectionPool'
 
@@ -35,31 +35,15 @@ export class NodeRepository {
     async getNodes(
         requestedFields: Set<string>,
         ids?: string[],
-        streamPartId?: StreamPartID,
-        neighbor?: NeighborInput,
         pageSize?: number,
         cursor?: string
     ): Promise<PaginatedListFragment<(NodeRow & { neighbors: StreamPartNeigbors[] })[]>> {
-        logger.info('Query: getNodes', { ids, streamPartId, neighbor, pageSize, cursor })
+        logger.info('Query: getNodes', { ids, pageSize, cursor })
         const whereClauses = []
         const params = []
         if (ids !== undefined) {
             whereClauses.push('id in (?)')
             params.push(ids)
-        }
-        if (streamPartId !== undefined) {
-            whereClauses.push(`
-                id in (SELECT nodeId1 FROM neighbors WHERE streamPartId = ?) OR
-                id in (SELECT nodeId2 FROM neighbors WHERE streamPartId = ?)
-            `)
-            params.push(streamPartId, streamPartId)
-        }
-        if (neighbor !== undefined) {
-            whereClauses.push(`
-                id in (SELECT nodeId1 FROM neighbors WHERE nodeId2 = ? AND streamPartId = ?) OR
-                id in (SELECT nodeId2 FROM neighbors WHERE nodeId1 = ? AND streamPartId = ?)
-            `)
-            params.push(neighbor.node, neighbor.streamPart, neighbor.node, neighbor.streamPart)
         }
         const sql = createSqlQuery(
             `SELECT id, ipAddress FROM nodes`,
