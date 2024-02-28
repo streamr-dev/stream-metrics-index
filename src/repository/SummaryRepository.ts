@@ -1,13 +1,12 @@
 import { Inject, Service } from 'typedi'
-import { Summary } from '../entities/Summary'
 import { ConnectionPool } from './ConnectionPool'
 
-interface StreamSummaryRow {
+export interface StreamSummaryRow {
     streamCount: number
     messagesPerSecond: number
 }
 
-interface NodeSummaryRow {
+export interface NodeSummaryRow {
     nodeCount: number
 } 
 
@@ -22,7 +21,7 @@ export class SummaryRepository {
         this.connectionPool = connectionPool
     }
 
-    async getSummary(): Promise<Summary> {
+    async getSummary(): Promise<StreamSummaryRow & NodeSummaryRow> {
         const streamSummaryRows = await this.connectionPool.queryOrExecute<StreamSummaryRow>(
             'SELECT count(*) as streamCount, sum(messagesPerSecond) as messagesPerSecond FROM streams'
         )
