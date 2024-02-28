@@ -4,7 +4,6 @@ import { RowDataPacket } from 'mysql2'
 import { StreamPartID } from 'streamr-client'
 import { Inject, Service } from 'typedi'
 import { Topology } from '../crawler/Topology'
-import { Neighbors } from '../entities/Node'
 import { createSqlQuery } from '../utils'
 import { ConnectionPool, PaginatedListFragment } from './ConnectionPool'
 
@@ -56,7 +55,7 @@ export class NodeRepository {
         streamPartId?: StreamPartID,
         pageSize?: number,
         cursor?: string
-    ): Promise<Neighbors> {
+    ): Promise<PaginatedListFragment<NeighborRow[]>> {
         logger.info('Query: getNeighbors', { nodeId, streamPartId })
         const whereClauses = []
         const params = []
