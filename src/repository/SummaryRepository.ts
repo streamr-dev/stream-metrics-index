@@ -1,14 +1,13 @@
-import { RowDataPacket } from 'mysql2/promise'
 import { Inject, Service } from 'typedi'
 import { Summary } from '../entities/Summary'
 import { ConnectionPool } from './ConnectionPool'
 
-interface StreamSummaryRow extends RowDataPacket {
+interface StreamSummaryRow {
     streamCount: number
     messagesPerSecond: number
 }
 
-interface NodeSummaryRow extends RowDataPacket {
+interface NodeSummaryRow {
     nodeCount: number
 } 
 

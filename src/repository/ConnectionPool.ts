@@ -1,10 +1,10 @@
-import { Pool, RowDataPacket, createPool, PoolConnection } from 'mysql2/promise'
+import { Pool, createPool, PoolConnection } from 'mysql2/promise'
 import { Inject, Service } from 'typedi'
 import { CONFIG_TOKEN, Config } from '../Config'
 
 const DEFAULT_PAGE_SIZE = 100
 
-export interface PaginatedListFragment<T extends RowDataPacket> {
+export interface PaginatedListFragment<T> {
     items: T[]
     cursor: string | null
 }
@@ -26,20 +26,20 @@ export class ConnectionPool {
     }
 
     // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-    async queryOrExecute<T extends RowDataPacket>(sql: string, params?: any[]): Promise<T[]> {
+    async queryOrExecute<T>(sql: string, params?: any[]): Promise<T[]> {
         const connection = await this.delegatee.getConnection()
         try {
-            const [ rows ] = await connection.query<T[]>(
+            const [ rows ] = await connection.query(
                 sql,
                 params
             )
-            return rows
+            return rows as T[]
         } finally {
             connection.release()
         }
     }
 
-    async queryPaginated<T extends RowDataPacket>(
+    async queryPaginated<T>(
         sql: string, params: any[], pageSize?: number, cursor?: string
     ): Promise<PaginatedListFragment<T>> {
         const limit = pageSize ?? DEFAULT_PAGE_SIZE

@@ -1,19 +1,19 @@
 import { Logger } from '@streamr/utils'
-import { RowDataPacket } from 'mysql2/promise'
 import { Inject, Service } from 'typedi'
 import { StreamrClientFacade } from '../StreamrClientFacade'
 import { OrderDirection } from '../entities/OrderDirection'
-import { Stream, StreamOrderBy } from '../entities/Stream'
+import { StreamOrderBy } from '../entities/Stream'
 import { collect, createSqlQuery } from '../utils'
 import { ConnectionPool, PaginatedListFragment } from './ConnectionPool'
 
-export interface StreamRow extends RowDataPacket {
+export interface StreamRow {
     id: string
     description: string | null
     peerCount: number
     messagesPerSecond: number
     publisherCount: number | null
     subscriberCount: number | null
+    crawlTimestamp: string
 }
 
 const EMPTY_SEARCH_RESULT = {
@@ -128,7 +128,7 @@ export class StreamRepository {
         )
     }
 
-    async replaceStream(stream: Stream): Promise<void> {
+    async replaceStream(stream: Omit<StreamRow, 'crawlTimestamp'>): Promise<void> {
         await this.connectionPool.queryOrExecute(
             `REPLACE INTO streams (
                 id, description, peerCount, messagesPerSecond, publisherCount, subscriberCount, crawlTimestamp

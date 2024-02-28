@@ -1,11 +1,10 @@
 import { Logger } from '@streamr/utils'
-import { RowDataPacket } from 'mysql2'
 import { Inject, Service } from 'typedi'
 import { Topology } from '../crawler/Topology'
 import { createSqlQuery } from '../utils'
 import { ConnectionPool, PaginatedListFragment } from './ConnectionPool'
 
-export interface NodeRow extends RowDataPacket {
+export interface NodeRow {
     id: string
     ipAddress: string | null
 }
