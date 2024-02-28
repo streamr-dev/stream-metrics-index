@@ -4,7 +4,7 @@ import { DhtAddress, NodeType, createRandomDhtAddress, getDhtAddressFromRaw, get
 import { StreamPartID, toStreamPartID } from '@streamr/protocol'
 import { NetworkNode, createNetworkNode } from '@streamr/trackerless-network'
 import { setAbortableInterval, waitForCondition } from '@streamr/utils'
-import { random, range, uniq } from 'lodash'
+import { random, range, uniq, without } from 'lodash'
 import StreamrClient, { CONFIG_TEST, NetworkNodeType, PeerDescriptor, StreamID, StreamPermission, StreamrClientConfig } from 'streamr-client'
 import Container from 'typedi'
 import { CONFIG_TOKEN } from '../src/Config'
@@ -109,16 +109,18 @@ const queryNodes = async (apiPort: number): Promise<Node[]> => {
     return response['items']
 }
 
-const queryNeighbors = async (nodeId: DhtAddress, streamPartId: StreamPartID, apiPort: number): Promise<Node[]> => {
+const queryNeighbors = async (nodeId: DhtAddress, streamPartId: StreamPartID, apiPort: number): Promise<DhtAddress[]> => {
     const query = `{
-        nodes(neighbor: {node: "${nodeId}", streamPart: "${streamPartId}"}) {
+        neighbors(node: "${nodeId}", streamPart: "${streamPartId}") {
             items {
-                id
+                nodeId1
+                nodeId2
             }
         }
     }`
     const response = await queryAPI(query, apiPort)
-    return response['items'].map((n: any) => n.id)
+    const items = response['items']
+    return without([items[0].nodeId1, items[0].nodeId2], nodeId)
 }
 
 export const nextValue = async <T>(source: AsyncIterator<T>): Promise<T | undefined> => {
