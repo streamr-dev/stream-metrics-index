@@ -278,10 +278,7 @@ describe('APIServer', () => {
         beforeEach(async () => {
             node1 = createRandomDhtAddress()
             node2 = createRandomDhtAddress()
-            await storeTestTopology([
-                { id: StreamPartIDUtils.parse('stream#0'), node1, node2 },
-                { id: StreamPartIDUtils.parse('stream#1'), node1: createRandomDhtAddress(), node2: createRandomDhtAddress() }
-            ])
+            await storeTestTopology([{ id: StreamPartIDUtils.parse('stream#0'), node1, node2 }])
         })
 
         it('ids', async () => {
@@ -321,7 +318,10 @@ describe('APIServer', () => {
         beforeEach(async () => {
             node1 = createRandomDhtAddress()
             node2 = createRandomDhtAddress()
-            await storeTestTopology([{ id: StreamPartIDUtils.parse('stream#0'), node1, node2 }])
+            await storeTestTopology([
+                { id: StreamPartIDUtils.parse('stream#0'), node1, node2 },
+                { id: StreamPartIDUtils.parse('stream#1'), node1: createRandomDhtAddress(), node2: createRandomDhtAddress() }
+            ])
         })
 
         it('all', async () => {
