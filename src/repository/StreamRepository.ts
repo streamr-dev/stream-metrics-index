@@ -6,6 +6,7 @@ import { OrderDirection } from '../entities/OrderDirection'
 import { StreamOrderBy, Stream, Streams } from '../entities/Stream'
 import { collect, createSqlQuery } from '../utils'
 import { ConnectionPool } from './ConnectionPool'
+import { StreamID } from 'streamr-client'
 
 interface StreamRow extends RowDataPacket {
     id: string
@@ -38,7 +39,7 @@ export class StreamRepository {
     }
 
     async getStreams(
-        ids?: string[],
+        ids?: StreamID[],
         searchTerm?: string,
         owner?: string,
         orderBy?: StreamOrderBy,

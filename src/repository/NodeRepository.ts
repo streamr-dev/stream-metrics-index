@@ -32,7 +32,7 @@ export class NodeRepository {
     }
 
     async getNodes(
-        ids?: string[],
+        ids?: DhtAddress[],
         pageSize?: number,
         cursor?: string
     ): Promise<PaginatedListFragment<NodeRow[]>> {

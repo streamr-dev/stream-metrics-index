@@ -3,6 +3,8 @@ import { Inject, Service } from 'typedi'
 import { OrderDirection } from '../entities/OrderDirection'
 import { StreamOrderBy, Streams } from '../entities/Stream'
 import { StreamRepository } from '../repository/StreamRepository'
+import { StreamID } from 'streamr-client'
+import { toEthereumAddress } from '@streamr/utils'
 
 @Resolver()
 @Service()
@@ -26,6 +28,14 @@ export class StreamResolver {
         @Arg("pageSize", () => Int, { nullable: true }) pageSize?: number,
         @Arg("cursor", { nullable: true }) cursor?: string,
     ): Promise<Streams> {
-        return this.repository.getStreams(ids, searchTerm, owner, orderBy, orderDirection, pageSize, cursor)
+        return this.repository.getStreams(
+            (ids !== undefined) ? ids.map((id) => id as StreamID) : undefined,
+            searchTerm,
+            (owner !== undefined) ? toEthereumAddress(owner) : undefined,
+            orderBy,
+            orderDirection,
+            pageSize,
+            cursor
+        )
     }
 }
