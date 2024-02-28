@@ -1,9 +1,11 @@
-import { Arg, Int, Query, Resolver } from 'type-graphql'
+import { DeepOmit } from 'ts-essentials'
+import { Arg, FieldResolver, Int, Query, Resolver, Root } from 'type-graphql'
 import { Inject, Service } from 'typedi'
-import { Nodes } from '../entities/Node'
+import { Location, Node, Nodes } from '../entities/Node'
 import { NodeRepository } from '../repository/NodeRepository'
+import { getLocationFromIpAddress } from '../location'
 
-@Resolver()
+@Resolver(() => Node)
 @Service()
 export class NodeResolver {
 
@@ -20,7 +22,17 @@ export class NodeResolver {
         @Arg("ids", () => [String], { nullable: true }) ids?: string[],
         @Arg("pageSize", () => Int, { nullable: true }) pageSize?: number,
         @Arg("cursor", { nullable: true }) cursor?: string,
-    ): Promise<Nodes> {
+    ): Promise<DeepOmit<Nodes, { items: { location: never }[] }>> {
         return this.repository.getNodes(ids, pageSize, cursor)
+    }
+
+    // eslint-disable-next-line class-methods-use-this
+    @FieldResolver()
+    location(@Root() node: Node): Location | null {
+        if (node.ipAddress !== null) {
+            return getLocationFromIpAddress(node.ipAddress) ?? null
+        } else {
+            return null
+        }
     }
 }

@@ -2,11 +2,10 @@ import { Logger } from '@streamr/utils'
 import { RowDataPacket } from 'mysql2'
 import { Inject, Service } from 'typedi'
 import { Topology } from '../crawler/Topology'
-import { Nodes } from '../entities/Node'
 import { createSqlQuery } from '../utils'
-import { ConnectionPool } from './ConnectionPool'
+import { ConnectionPool, PaginatedListFragment } from './ConnectionPool'
 
-interface NodeRow extends RowDataPacket {
+export interface NodeRow extends RowDataPacket {
     id: string
     ipAddress: string | null
 }
@@ -28,7 +27,7 @@ export class NodeRepository {
         ids?: string[],
         pageSize?: number,
         cursor?: string
-    ): Promise<Nodes> {
+    ): Promise<PaginatedListFragment<NodeRow[]>> {
         logger.info('Query: getNodes', { ids, pageSize, cursor })
         const whereClauses = []
         const params = []
