@@ -3,11 +3,11 @@ import { RowDataPacket } from 'mysql2/promise'
 import { Inject, Service } from 'typedi'
 import { StreamrClientFacade } from '../StreamrClientFacade'
 import { OrderDirection } from '../entities/OrderDirection'
-import { StreamOrderBy, Stream, Streams } from '../entities/Stream'
+import { Stream, StreamOrderBy } from '../entities/Stream'
 import { collect, createSqlQuery } from '../utils'
-import { ConnectionPool } from './ConnectionPool'
+import { ConnectionPool, PaginatedListFragment } from './ConnectionPool'
 
-interface StreamRow extends RowDataPacket {
+export interface StreamRow extends RowDataPacket {
     id: string
     description: string | null
     peerCount: number
@@ -45,7 +45,7 @@ export class StreamRepository {
         orderDirection?: OrderDirection,
         pageSize?: number,
         cursor?: string
-    ): Promise<Streams> {
+    ): Promise<PaginatedListFragment<StreamRow>> {
         logger.info('Query: getStreams', { ids, searchTerm, owner, orderBy, orderDirection, pageSize, cursor })
         const whereClauses = []
         const params = []
