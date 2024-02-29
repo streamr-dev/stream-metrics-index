@@ -26,7 +26,7 @@ export class NodeResolver {
         @Arg("cursor", { nullable: true }) cursor?: string
     ): Promise<DeepOmit<Nodes, { items: { location: never }[] }>> {
         return this.repository.getNodes(
-            (ids !== undefined) ? ids.map((id) => id as DhtAddress) : undefined,
+            (ids !== undefined) ? ids as DhtAddress[] : undefined,
             pageSize,
             cursor
         )
