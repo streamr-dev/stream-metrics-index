@@ -32,3 +32,23 @@ export class Nodes {
     @Field(() => String, { nullable: true })
     cursor!: string | null
 }
+
+/* eslint-disable indent */
+@ObjectType()
+export class Neighbor {
+    @Field()
+    streamPartId!: string
+    @Field()
+    nodeId1!: string
+    @Field()
+    nodeId2!: string
+}
+
+/* eslint-disable indent */
+@ObjectType()
+export class Neighbors {
+    @Field(() => [Neighbor])
+    items!: Neighbor[]
+    @Field(() => String, { nullable: true })
+    cursor!: string | null
+}

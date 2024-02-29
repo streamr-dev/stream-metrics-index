@@ -1,10 +1,11 @@
 import 'reflect-metadata'
 
-import { NodeType, createRandomDhtAddress, getDhtAddressFromRaw, getRawFromDhtAddress } from '@streamr/dht'
+import { DhtAddress, NodeType, createRandomDhtAddress, getDhtAddressFromRaw, getRawFromDhtAddress } from '@streamr/dht'
+import { StreamPartID, toStreamPartID } from '@streamr/protocol'
 import StreamrClient, { CONFIG_TEST, NetworkNodeType, PeerDescriptor, StreamID, StreamPermission, StreamrClientConfig } from '@streamr/sdk'
 import { NetworkNode, createNetworkNode } from '@streamr/trackerless-network'
 import { setAbortableInterval, waitForCondition } from '@streamr/utils'
-import { range, uniq } from 'lodash'
+import { random, range, uniq, without } from 'lodash'
 import Container from 'typedi'
 import { CONFIG_TOKEN } from '../src/Config'
 import { APIServer } from '../src/api/APIServer'
@@ -106,6 +107,20 @@ const queryNodes = async (apiPort: number): Promise<Node[]> => {
     }`
     const response = await queryAPI(query, apiPort)
     return response['items']
+}
+
+const queryNeighbors = async (nodeId: DhtAddress, streamPartId: StreamPartID, apiPort: number): Promise<DhtAddress[]> => {
+    const query = `{
+        neighbors(node: "${nodeId}", streamPart: "${streamPartId}") {
+            items {
+                nodeId1
+                nodeId2
+            }
+        }
+    }`
+    const response = await queryAPI(query, apiPort)
+    const items = response['items']
+    return without([items[0].nodeId1, items[0].nodeId2], nodeId)
 }
 
 export const nextValue = async <T>(source: AsyncIterator<T>): Promise<T | undefined> => {
@@ -212,6 +227,10 @@ describe('end-to-end', () => {
             await crawler.getNodeId()
         ])
         expect(uniq(nodes.map((n) => n.ipAddress))).toEqual([DOCKER_DEV_LOOPBACK_IP_ADDRESS])
+
+        const randomActiveStreamPartId = toStreamPartID(existingStream.id, random(ACTIVE_PARTITION_COUNT - 1))
+        const neighbors = (await queryNeighbors(await publisher.getNodeId(), randomActiveStreamPartId, apiPort))!
+        expect(neighbors).toEqual([await subscriber.getNodeId()])
 
         const newStream = await createTestStream()
         await startPublisherAndSubscriberForStream(newStream.id, publishingAbortControler.signal)

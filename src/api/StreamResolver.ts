@@ -1,3 +1,5 @@
+import { StreamID } from '@streamr/sdk'
+import { toEthereumAddress } from '@streamr/utils'
 import { Arg, Int, Query, Resolver } from 'type-graphql'
 import { Inject, Service } from 'typedi'
 import { OrderDirection } from '../entities/OrderDirection'
@@ -26,6 +28,14 @@ export class StreamResolver {
         @Arg("pageSize", () => Int, { nullable: true }) pageSize?: number,
         @Arg("cursor", { nullable: true }) cursor?: string,
     ): Promise<Streams> {
-        return this.repository.getStreams(ids, searchTerm, owner, orderBy, orderDirection, pageSize, cursor)
+        return this.repository.getStreams(
+            (ids !== undefined) ? ids.map((id) => id as StreamID) : undefined,
+            searchTerm,
+            (owner !== undefined) ? toEthereumAddress(owner) : undefined,
+            orderBy,
+            orderDirection,
+            pageSize,
+            cursor
+        )
     }
 }

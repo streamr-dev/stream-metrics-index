@@ -1,3 +1,5 @@
+import { DhtAddress } from '@streamr/dht'
+import { StreamPartID } from '@streamr/sdk'
 import { Logger } from '@streamr/utils'
 import { RowDataPacket } from 'mysql2'
 import { Inject, Service } from 'typedi'
@@ -8,6 +10,12 @@ import { ConnectionPool, PaginatedListFragment } from './ConnectionPool'
 export interface NodeRow extends RowDataPacket {
     id: string
     ipAddress: string | null
+}
+
+interface NeighborRow extends RowDataPacket { 
+    streamPartId: string
+    nodeId1: string
+    nodeId2: string
 }
 
 const logger = new Logger(module)
@@ -24,7 +32,7 @@ export class NodeRepository {
     }
 
     async getNodes(
-        ids?: string[],
+        ids?: DhtAddress[],
         pageSize?: number,
         cursor?: string
     ): Promise<PaginatedListFragment<NodeRow[]>> {
@@ -42,15 +50,61 @@ export class NodeRepository {
         return this.connectionPool.queryPaginated<NodeRow[]>(sql, params)
     }
 
+    async getNeighbors(
+        nodeId?: DhtAddress,
+        streamPartId?: StreamPartID,
+        pageSize?: number,
+        cursor?: string
+    ): Promise<PaginatedListFragment<NeighborRow[]>> {
+        logger.info('Query: getNeighbors', { nodeId, streamPartId })
+        const whereClauses = []
+        const params = []
+        if (nodeId !== undefined) {
+            whereClauses.push('nodeId1 = ? OR nodeId2 = ?')
+            params.push(nodeId, nodeId)
+        }
+        if (streamPartId !== undefined) {
+            whereClauses.push('streamPartId = ?')
+            params.push(streamPartId)
+        }
+        const sql = createSqlQuery(
+            'SELECT streamPartId, nodeId1, nodeId2 FROM neighbors',
+            whereClauses
+        )
+        return this.connectionPool.queryPaginated<NeighborRow[]>(
+            sql,
+            params,
+            pageSize,
+            cursor
+        )
+    }
+
     async replaceNetworkTopology(topology: Topology): Promise<void> {
         const nodes = topology.getNodes().map((node) => {
             return [node.id, node.ipAddress]
         })
+        const neighbors: [StreamPartID, DhtAddress, DhtAddress][] = []
+        for (const node of topology.getNodes()) {
+            for (const streamPartId of node.streamPartNeighbors.keys()) {
+                const streamPartNeighbors = node.streamPartNeighbors.get(streamPartId)!
+                for (const neighbor of streamPartNeighbors) {
+                    // If node A and B are neighbors, we assume that there are two associations in the topology:
+                    // A->B and B-A. We don't need to store both associations to the DB. The following comparison
+                    // filters out the duplication. Note that if there is only one side of the association 
+                    // in the topology, that association is maybe not stored at all.
+                    if (node.id < neighbor) {
+                        neighbors.push([streamPartId, node.id, neighbor])
+                    }
+                }
+            }
+        }
         const connection = await this.connectionPool.getConnection()
         try {
             await connection.beginTransaction()
+            await connection.query('DELETE FROM neighbors')
             await connection.query('DELETE FROM nodes')
             await connection.query('INSERT INTO nodes (id, ipAddress) VALUES ?', [nodes])
+            await connection.query('INSERT INTO neighbors (streamPartId, nodeId1, nodeId2) VALUES ?', [neighbors])
             await connection.commit()
         } catch (e) {
             connection.rollback()
