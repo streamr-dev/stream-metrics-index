@@ -1,10 +1,10 @@
 import 'reflect-metadata'
 
 import { NodeType, createRandomDhtAddress, getDhtAddressFromRaw, getRawFromDhtAddress } from '@streamr/dht'
+import StreamrClient, { CONFIG_TEST, NetworkNodeType, PeerDescriptor, StreamID, StreamPermission, StreamrClientConfig } from '@streamr/sdk'
 import { NetworkNode, createNetworkNode } from '@streamr/trackerless-network'
 import { setAbortableInterval, waitForCondition } from '@streamr/utils'
 import { range, uniq } from 'lodash'
-import StreamrClient, { CONFIG_TEST, NetworkNodeType, PeerDescriptor, StreamID, StreamPermission, StreamrClientConfig } from 'streamr-client'
 import Container from 'typedi'
 import { CONFIG_TOKEN } from '../src/Config'
 import { APIServer } from '../src/api/APIServer'
