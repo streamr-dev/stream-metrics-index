@@ -1,7 +1,7 @@
 import { StreamID, toStreamPartID } from '@streamr/protocol'
+import { StreamMessage } from '@streamr/sdk'
 import { Gate, Logger, wait } from '@streamr/utils'
 import { sampleSize } from 'lodash'
-import { StreamMessage } from 'streamr-client'
 import { Config } from '../Config'
 import { NetworkNodeFacade } from './NetworkNodeFacade'
 

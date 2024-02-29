@@ -89,7 +89,7 @@ export const queryAPI = async (query: string, port: number): Promise<any> => {
 export const createSqlQuery = (select: string, whereClauses: string[], orderByExpression?: string): string => {
     let sql = select
     if (whereClauses.length > 0) {
-        sql += ` WHERE ${whereClauses.join(' AND ')}`
+        sql += ` WHERE ${whereClauses.map((c) => `(${c})`).join(' AND ')}`
     }
     if (orderByExpression !== undefined) {
         sql += ` ORDER BY ${orderByExpression}`

@@ -1,3 +1,4 @@
+import { StreamID } from '@streamr/sdk'
 import { Logger } from '@streamr/utils'
 import { Inject, Service } from 'typedi'
 import { StreamrClientFacade } from '../StreamrClientFacade'
@@ -38,7 +39,7 @@ export class StreamRepository {
     }
 
     async getStreams(
-        ids?: string[],
+        ids?: StreamID[],
         searchTerm?: string,
         owner?: string,
         orderBy?: StreamOrderBy,
