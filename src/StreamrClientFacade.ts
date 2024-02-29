@@ -1,7 +1,5 @@
 import { DhtAddress, NodeType, getRawFromDhtAddress } from '@streamr/dht'
-import { NetworkNode } from '@streamr/trackerless-network'
-import { 
-    StreamrClient,
+import {
     NetworkNodeType,
     NetworkPeerDescriptor,
     PeerDescriptor,
@@ -9,8 +7,10 @@ import {
     StreamCreationEvent,
     StreamID,
     StreamMetadata,
-    StreamPermission
-} from 'streamr-client'
+    StreamPermission,
+    StreamrClient
+} from '@streamr/sdk'
+import { NetworkNode } from '@streamr/trackerless-network'
 import { Inject, Service } from 'typedi'
 import { CONFIG_TOKEN, Config } from './Config'
 import { NetworkNodeFacade } from './crawler/NetworkNodeFacade'

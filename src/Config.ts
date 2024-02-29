@@ -1,5 +1,5 @@
+import { StreamrClientConfig } from '@streamr/sdk'
 import { readFile } from 'fs/promises'
-import { StreamrClientConfig } from 'streamr-client'
 import { Token } from 'typedi'
 
 export const CONFIG_TOKEN = new Token<Config>()

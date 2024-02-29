@@ -1,20 +1,20 @@
 import { PeerDescriptor, getNodeIdFromPeerDescriptor } from '@streamr/dht'
 import { StreamID, StreamPartID, StreamPartIDUtils, toStreamPartID } from '@streamr/protocol'
+import { DhtAddress, Stream, StreamCreationEvent, StreamMetadata, StreamPermission } from '@streamr/sdk'
 import { NodeInfo } from '@streamr/trackerless-network'
 import { Logger, binaryToHex, wait } from '@streamr/utils'
 import { difference, range, sortBy } from 'lodash'
 import pLimit from 'p-limit'
-import { DhtAddress, Stream, StreamCreationEvent, StreamMetadata, StreamPermission } from 'streamr-client'
 import { Inject, Service } from 'typedi'
 import { CONFIG_TOKEN, Config } from '../Config'
-import { StreamRepository } from '../repository/StreamRepository'
 import { StreamrClientFacade } from '../StreamrClientFacade'
+import { NodeRepository } from '../repository/NodeRepository'
+import { StreamRepository } from '../repository/StreamRepository'
 import { collect, retry } from '../utils'
 import { NetworkNodeFacade } from './NetworkNodeFacade'
 import { MAX_SUBSCRIPTION_COUNT, SubscribeGate } from './SubscribeGate'
 import { Topology } from './Topology'
 import { getMessageRate } from './messageRate'
-import { NodeRepository } from '../repository/NodeRepository'
 
 const logger = new Logger(module)
 
