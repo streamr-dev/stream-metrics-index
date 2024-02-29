@@ -1,12 +1,12 @@
+import { StreamID } from '@streamr/sdk'
 import { Logger } from '@streamr/utils'
 import { RowDataPacket } from 'mysql2/promise'
 import { Inject, Service } from 'typedi'
 import { StreamrClientFacade } from '../StreamrClientFacade'
 import { OrderDirection } from '../entities/OrderDirection'
-import { StreamOrderBy, Stream, Streams } from '../entities/Stream'
+import { Stream, StreamOrderBy, Streams } from '../entities/Stream'
 import { collect, createSqlQuery } from '../utils'
 import { ConnectionPool } from './ConnectionPool'
-import { StreamID } from 'streamr-client'
 
 interface StreamRow extends RowDataPacket {
     id: string

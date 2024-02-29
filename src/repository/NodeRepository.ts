@@ -1,7 +1,7 @@
 import { DhtAddress } from '@streamr/dht'
+import { StreamPartID } from '@streamr/sdk'
 import { Logger } from '@streamr/utils'
 import { RowDataPacket } from 'mysql2'
-import { StreamPartID } from 'streamr-client'
 import { Inject, Service } from 'typedi'
 import { Topology } from '../crawler/Topology'
 import { createSqlQuery } from '../utils'

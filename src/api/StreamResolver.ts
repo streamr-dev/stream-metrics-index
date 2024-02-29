@@ -1,10 +1,10 @@
+import { StreamID } from '@streamr/sdk'
+import { toEthereumAddress } from '@streamr/utils'
 import { Arg, Int, Query, Resolver } from 'type-graphql'
 import { Inject, Service } from 'typedi'
 import { OrderDirection } from '../entities/OrderDirection'
 import { StreamOrderBy, Streams } from '../entities/Stream'
 import { StreamRepository } from '../repository/StreamRepository'
-import { StreamID } from 'streamr-client'
-import { toEthereumAddress } from '@streamr/utils'
 
 @Resolver()
 @Service()
