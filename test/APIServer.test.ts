@@ -272,12 +272,10 @@ describe('APIServer', () => {
 
     describe('nodes', () => {
 
-        let node1: DhtAddress
-        let node2: DhtAddress
+        const node1 = createRandomDhtAddress()
+        const node2 = createRandomDhtAddress()
 
         beforeEach(async () => {
-            node1 = createRandomDhtAddress()
-            node2 = createRandomDhtAddress()
             await storeTestTopology([{ id: StreamPartIDUtils.parse('stream#0'), node1, node2 }])
         })
 
@@ -312,15 +310,15 @@ describe('APIServer', () => {
 
     describe('neighbors', () => {
 
-        let node1: DhtAddress
-        let node2: DhtAddress
+        const node1 = createRandomDhtAddress()
+        const node2 = createRandomDhtAddress()
+        const node3 = createRandomDhtAddress()
+        const node4 = createRandomDhtAddress()
 
         beforeEach(async () => {
-            node1 = createRandomDhtAddress()
-            node2 = createRandomDhtAddress()
             await storeTestTopology([
                 { id: StreamPartIDUtils.parse('stream#0'), node1, node2 },
-                { id: StreamPartIDUtils.parse('stream#1'), node1: createRandomDhtAddress(), node2: createRandomDhtAddress() }
+                { id: StreamPartIDUtils.parse('stream#1'), node1: node3, node2: node4 }
             ])
         })
 
@@ -335,8 +333,8 @@ describe('APIServer', () => {
                 }
             }`, apiPort)
             const neighbors = response['items']
-            const actualNodes = [neighbors[0].nodeId1, neighbors[0].nodeId2]
-            expect(actualNodes).toIncludeSameMembers([node1, node2])
+            const actualNodes = [neighbors[0].nodeId1, neighbors[0].nodeId2, neighbors[1].nodeId1, neighbors[1].nodeId2]
+            expect(actualNodes).toIncludeSameMembers([node1, node2, node3, node4])
         })
 
         it('filter by node', async () => {
