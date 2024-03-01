@@ -96,9 +96,3 @@ export const createSqlQuery = (select: string, whereClauses: string[], orderByEx
     }
     return sql
 }
-
-// TODO move to @streamr/utils
-export const numberToIpv4 = (value: number): string => {
-    const octets = [24, 16, 8, 0].map((shift) => (value >> shift) & 255)
-    return octets.join('.')
-}
