@@ -1,14 +1,12 @@
-import { RowDataPacket } from 'mysql2/promise'
 import { Inject, Service } from 'typedi'
-import { Summary } from '../entities/Summary'
 import { ConnectionPool } from './ConnectionPool'
 
-interface StreamSummaryRow extends RowDataPacket {
+export interface StreamSummaryRow {
     streamCount: number
     messagesPerSecond: number
 }
 
-interface NodeSummaryRow extends RowDataPacket {
+export interface NodeSummaryRow {
     nodeCount: number
 } 
 
@@ -23,11 +21,11 @@ export class SummaryRepository {
         this.connectionPool = connectionPool
     }
 
-    async getSummary(): Promise<Summary> {
-        const streamSummaryRows = await this.connectionPool.queryOrExecute<StreamSummaryRow[]>(
+    async getSummary(): Promise<StreamSummaryRow & NodeSummaryRow> {
+        const streamSummaryRows = await this.connectionPool.queryOrExecute<StreamSummaryRow>(
             'SELECT count(*) as streamCount, sum(messagesPerSecond) as messagesPerSecond FROM streams'
         )
-        const nodeSummaryRows = await this.connectionPool.queryOrExecute<NodeSummaryRow[]>(
+        const nodeSummaryRows = await this.connectionPool.queryOrExecute<NodeSummaryRow>(
             'SELECT count(*) as nodeCount FROM nodes'
         )
         return {

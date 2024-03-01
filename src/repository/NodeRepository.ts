@@ -1,18 +1,17 @@
 import { DhtAddress } from '@streamr/dht'
 import { StreamPartID } from '@streamr/sdk'
 import { Logger } from '@streamr/utils'
-import { RowDataPacket } from 'mysql2'
 import { Inject, Service } from 'typedi'
 import { Topology } from '../crawler/Topology'
 import { createSqlQuery } from '../utils'
 import { ConnectionPool, PaginatedListFragment } from './ConnectionPool'
 
-export interface NodeRow extends RowDataPacket {
+export interface NodeRow {
     id: string
     ipAddress: string | null
 }
 
-interface NeighborRow extends RowDataPacket { 
+interface NeighborRow { 
     streamPartId: string
     nodeId1: string
     nodeId2: string
@@ -35,7 +34,7 @@ export class NodeRepository {
         ids?: DhtAddress[],
         pageSize?: number,
         cursor?: string
-    ): Promise<PaginatedListFragment<NodeRow[]>> {
+    ): Promise<PaginatedListFragment<NodeRow>> {
         logger.info('Query: getNodes', { ids, pageSize, cursor })
         const whereClauses = []
         const params = []
@@ -47,7 +46,7 @@ export class NodeRepository {
             `SELECT id, ipAddress FROM nodes`,
             whereClauses
         )
-        return this.connectionPool.queryPaginated<NodeRow[]>(sql, params)
+        return this.connectionPool.queryPaginated<NodeRow>(sql, params)
     }
 
     async getNeighbors(
@@ -55,7 +54,7 @@ export class NodeRepository {
         streamPartId?: StreamPartID,
         pageSize?: number,
         cursor?: string
-    ): Promise<PaginatedListFragment<NeighborRow[]>> {
+    ): Promise<PaginatedListFragment<NeighborRow>> {
         logger.info('Query: getNeighbors', { nodeId, streamPartId })
         const whereClauses = []
         const params = []
@@ -71,7 +70,7 @@ export class NodeRepository {
             'SELECT streamPartId, nodeId1, nodeId2 FROM neighbors',
             whereClauses
         )
-        return this.connectionPool.queryPaginated<NeighborRow[]>(
+        return this.connectionPool.queryPaginated<NeighborRow>(
             sql,
             params,
             pageSize,

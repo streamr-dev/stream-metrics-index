@@ -1,20 +1,20 @@
 import { StreamID } from '@streamr/sdk'
 import { Logger } from '@streamr/utils'
-import { RowDataPacket } from 'mysql2/promise'
 import { Inject, Service } from 'typedi'
 import { StreamrClientFacade } from '../StreamrClientFacade'
 import { OrderDirection } from '../entities/OrderDirection'
-import { Stream, StreamOrderBy, Streams } from '../entities/Stream'
+import { StreamOrderBy } from '../entities/Stream'
 import { collect, createSqlQuery } from '../utils'
-import { ConnectionPool } from './ConnectionPool'
+import { ConnectionPool, PaginatedListFragment } from './ConnectionPool'
 
-interface StreamRow extends RowDataPacket {
+export interface StreamRow {
     id: string
     description: string | null
     peerCount: number
     messagesPerSecond: number
     publisherCount: number | null
     subscriberCount: number | null
+    crawlTimestamp: string
 }
 
 const EMPTY_SEARCH_RESULT = {
@@ -46,7 +46,7 @@ export class StreamRepository {
         orderDirection?: OrderDirection,
         pageSize?: number,
         cursor?: string
-    ): Promise<Streams> {
+    ): Promise<PaginatedListFragment<StreamRow>> {
         logger.info('Query: getStreams', { ids, searchTerm, owner, orderBy, orderDirection, pageSize, cursor })
         const whereClauses = []
         const params = []
@@ -72,7 +72,7 @@ export class StreamRepository {
             whereClauses,
             StreamRepository.formOrderByExpression(orderBy ?? StreamOrderBy.ID, orderDirection ?? OrderDirection.ASC)
         )
-        return this.connectionPool.queryPaginated<StreamRow[]>(sql, params, pageSize, cursor)
+        return this.connectionPool.queryPaginated<StreamRow>(sql, params, pageSize, cursor)
     }
 
     private static formOrderByExpression(orderBy: StreamOrderBy, orderDirection: OrderDirection) {
@@ -111,7 +111,7 @@ export class StreamRepository {
     }
 
     async getAllStreams(): Promise<{ id: string, crawlTimestamp: number }[]> {
-        const rows = await this.connectionPool.queryOrExecute<StreamRow[]>(
+        const rows = await this.connectionPool.queryOrExecute<StreamRow>(
             'SELECT id, crawlTimestamp FROM streams'
         )
         return rows.map((r: StreamRow) => {
@@ -129,7 +129,7 @@ export class StreamRepository {
         )
     }
 
-    async replaceStream(stream: Stream): Promise<void> {
+    async replaceStream(stream: Omit<StreamRow, 'crawlTimestamp'>): Promise<void> {
         await this.connectionPool.queryOrExecute(
             `REPLACE INTO streams (
                 id, description, peerCount, messagesPerSecond, publisherCount, subscriberCount, crawlTimestamp
