@@ -53,7 +53,7 @@ export class ConnectionPool {
         )
         return {
             items: rows,
-            cursor: (rows.length === pageSize) ? String(offset + rows.length) : null
+            cursor: (rows.length === limit) ? String(offset + rows.length) : null
         }
     }
 

@@ -46,7 +46,12 @@ export class NodeRepository {
             `SELECT id, ipAddress FROM nodes`,
             whereClauses
         )
-        return this.connectionPool.queryPaginated<NodeRow>(sql, params)
+        return this.connectionPool.queryPaginated<NodeRow>(
+            sql,
+            params,
+            pageSize,
+            cursor
+        )
     }
 
     async getNeighbors(
