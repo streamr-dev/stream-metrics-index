@@ -7,7 +7,7 @@ export const getLocationFromIpAddress = (ipAddress: string): Location | undefine
         return {
             latitude: data.ll[0],
             longitude: data.ll[1],
-            city: data.city,
+            city: (data.city) !== '' ? (data.city) : null,
             country: data.country
         }
     } else {

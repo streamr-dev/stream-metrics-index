@@ -18,8 +18,8 @@ export class Location {
     latitude!: number
     @Field(() => Float)
     longitude!: number
-    @Field()
-    city!: string
+    @Field(() => String, { nullable: true })
+    city!: string | null
     @Field()
     country!: string
 }
