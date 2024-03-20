@@ -20,12 +20,7 @@ const storeTestTopology = async (
     }[]
 ) => {
     const nodeRepository = Container.get(NodeRepository)
-    const nodeIds: Set<DhtAddress> = new Set()
-    for (const streamPart of streamParts) {
-        for (const nodeId of streamPart.nodeIds) {
-            nodeIds.add(nodeId)
-        }
-    }
+    const nodeIds: Set<DhtAddress> = new Set(streamParts.map((sp) => sp.nodeIds).flat())
     const getNodes = () => {
         return [...nodeIds].map((nodeId: DhtAddress) => {
             const streamPartNeighbors = new Multimap()
