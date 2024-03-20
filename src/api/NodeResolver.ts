@@ -1,4 +1,4 @@
-import { StreamPartIDUtils } from '@streamr/protocol'
+import { StreamPartIDUtils, toStreamID } from '@streamr/protocol'
 import { DhtAddress } from '@streamr/sdk'
 import { DeepOmit } from 'ts-essentials'
 import { Arg, FieldResolver, Int, Query, Resolver, Root } from 'type-graphql'
@@ -22,11 +22,13 @@ export class NodeResolver {
     @Query(() => Nodes)
     async nodes(
         @Arg("ids", () => [String], { nullable: true }) ids?: string[],
+        @Arg("stream", { nullable: true }) streamId?: string,
         @Arg("pageSize", () => Int, { nullable: true }) pageSize?: number,
         @Arg("cursor", { nullable: true }) cursor?: string
     ): Promise<DeepOmit<Nodes, { items: { location: never }[] }>> {
         return this.repository.getNodes(
             (ids !== undefined) ? ids as DhtAddress[] : undefined,
+            (streamId !== undefined) ? toStreamID(streamId) : undefined,
             pageSize,
             cursor
         )
