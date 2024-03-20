@@ -332,11 +332,14 @@ describe('APIServer', () => {
         const node2 = createRandomDhtAddress()
         const node3 = createRandomDhtAddress()
         const node4 = createRandomDhtAddress()
+        const node5 = createRandomDhtAddress()
+        const node6 = createRandomDhtAddress()
 
         beforeEach(async () => {
             await storeTestTopology([
-                { id: StreamPartIDUtils.parse('stream#0'), node1, node2 },
-                { id: StreamPartIDUtils.parse('stream#1'), node1: node3, node2: node4 }
+                { id: StreamPartIDUtils.parse('stream1#0'), node1, node2 },
+                { id: StreamPartIDUtils.parse('stream1#1'), node1: node3, node2: node4 },
+                { id: StreamPartIDUtils.parse('stream2#0'), node1: node5, node2: node6 }
             ])
         })
 
@@ -351,8 +354,8 @@ describe('APIServer', () => {
                 }
             }`, apiPort)
             const neighbors = response['items']
-            const actualNodes = [neighbors[0].nodeId1, neighbors[0].nodeId2, neighbors[1].nodeId1, neighbors[1].nodeId2]
-            expect(actualNodes).toIncludeSameMembers([node1, node2, node3, node4])
+            const actualNodes = neighbors.map((n: any) => [n.nodeId1, n.nodeId2]).flat()
+            expect(actualNodes).toIncludeSameMembers([node1, node2, node3, node4, node5, node6])
         })
 
         it('filter by node', async () => {
@@ -366,13 +369,13 @@ describe('APIServer', () => {
                 }
             }`, apiPort)
             const neighbors = response1['items']
-            const actualNodes = [neighbors[0].nodeId1, neighbors[0].nodeId2]
+            const actualNodes = neighbors.map((n: any) => [n.nodeId1, n.nodeId2]).flat()
             expect(actualNodes).toIncludeSameMembers([node1, node2])
         })
 
         it('filter by stream part', async () => {
             const response = await queryAPI(`{
-                neighbors(streamPart: "stream#0") {
+                neighbors(streamPart: "stream1#0") {
                     items {
                         nodeId1
                         nodeId2
@@ -380,8 +383,22 @@ describe('APIServer', () => {
                 }
             }`, apiPort)
             const neighbors = response['items']
-            const actualNodes = [neighbors[0].nodeId1, neighbors[0].nodeId2]
+            const actualNodes = neighbors.map((n: any) => [n.nodeId1, n.nodeId2]).flat()
             expect(actualNodes).toIncludeSameMembers([node1, node2])
+        })
+
+        it('filter by stream', async () => {
+            const response = await queryAPI(`{
+                neighbors(stream: "stream1") {
+                    items {
+                        nodeId1
+                        nodeId2
+                    }
+                }
+            }`, apiPort)
+            const neighbors = response['items']
+            const actualNodes = neighbors.map((n: any) => [n.nodeId1, n.nodeId2]).flat()
+            expect(actualNodes).toIncludeSameMembers([node1, node2, node3, node4])
         })
     })
 
