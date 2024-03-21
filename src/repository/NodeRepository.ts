@@ -70,6 +70,7 @@ export class NodeRepository {
     async getNeighbors(
         nodeId?: DhtAddress,
         streamPartId?: StreamPartID,
+        streamId?: StreamID,
         pageSize?: number,
         cursor?: string
     ): Promise<PaginatedListFragment<NeighborRow>> {
@@ -83,6 +84,10 @@ export class NodeRepository {
         if (streamPartId !== undefined) {
             whereClauses.push('streamPartId = ?')
             params.push(streamPartId)
+        }
+        if (streamId !== undefined) {
+            whereClauses.push('streamPartId LIKE ?')
+            params.push(`${streamId}#%`)
         }
         const sql = createSqlQuery(
             'SELECT streamPartId, nodeId1, nodeId2 FROM neighbors',
