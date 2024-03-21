@@ -38,12 +38,14 @@ export class NodeResolver {
     async neighbors(
         @Arg("node", { nullable: true }) nodeId?: DhtAddress,
         @Arg("streamPart", { nullable: true }) streamPart?: string,
+        @Arg("stream", { nullable: true }) streamId?: string,
         @Arg("pageSize", () => Int, { nullable: true }) pageSize?: number,
         @Arg("cursor", { nullable: true }) cursor?: string
     ): Promise<Neighbors> {
         return this.repository.getNeighbors(
             (nodeId !== undefined) ? nodeId as DhtAddress : undefined,
             (streamPart !== undefined) ? StreamPartIDUtils.parse(streamPart) : undefined,
+            (streamId !== undefined) ? toStreamID(streamId) : undefined,
             pageSize,
             cursor
         )
