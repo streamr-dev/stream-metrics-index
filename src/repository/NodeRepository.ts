@@ -1,5 +1,5 @@
 import { DhtAddress } from '@streamr/dht'
-import { StreamPartID } from '@streamr/sdk'
+import { StreamID, StreamPartID } from '@streamr/sdk'
 import { Logger } from '@streamr/utils'
 import { Inject, Service } from 'typedi'
 import { Topology } from '../crawler/Topology'
@@ -32,6 +32,7 @@ export class NodeRepository {
 
     async getNodes(
         ids?: DhtAddress[],
+        streamId?: StreamID,
         pageSize?: number,
         cursor?: string
     ): Promise<PaginatedListFragment<NodeRow>> {
@@ -41,6 +42,18 @@ export class NodeRepository {
         if (ids !== undefined) {
             whereClauses.push('id in (?)')
             params.push(ids)
+        }
+        if (streamId !== undefined) {
+            const streamPartExpression = `${streamId}#%`
+            whereClauses.push(`id IN (
+                SELECT DISTINCT id
+                FROM (
+                    SELECT nodeId1 AS id FROM neighbors WHERE streamPartId LIKE ?
+                    UNION
+                    SELECT nodeId2 AS id FROM neighbors WHERE streamPartId LIKE ?
+                ) AS x
+            )`)
+            params.push(streamPartExpression, streamPartExpression)
         }
         const sql = createSqlQuery(
             `SELECT id, ipAddress FROM nodes`,

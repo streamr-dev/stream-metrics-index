@@ -274,9 +274,15 @@ describe('APIServer', () => {
 
         const node1 = createRandomDhtAddress()
         const node2 = createRandomDhtAddress()
+        const node3 = createRandomDhtAddress()
+        const node4 = createRandomDhtAddress()
 
         beforeEach(async () => {
-            await storeTestTopology([{ id: StreamPartIDUtils.parse('stream#0'), node1, node2 }])
+            await storeTestTopology([
+                { id: StreamPartIDUtils.parse('stream1#0'), node1, node2 },
+                { id: StreamPartIDUtils.parse('stream1#1'), node1: node3, node2: node4 },
+                { id: StreamPartIDUtils.parse('stream2#0'), node1: createRandomDhtAddress(), node2: createRandomDhtAddress() }
+            ])
         })
 
         it('ids', async () => {
@@ -305,6 +311,18 @@ describe('APIServer', () => {
                     longitude: 136.906
                 }
             })
+        })
+
+        it('stream', async () => {
+            const response = await queryAPI(`{
+                nodes(stream: "stream1") {
+                    items {
+                        id
+                    }
+                }
+            }`, apiPort)
+            const actualNodeIds = response.items.map((node: any) => node.id)
+            expect(actualNodeIds).toIncludeSameMembers([node1, node2, node3, node4])
         })
     }) 
 
