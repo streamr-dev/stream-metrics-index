@@ -11,17 +11,24 @@ const logger = new Logger(module)
 // We assume that traffic levels in each partitions are be quite similar.
 export const MAX_PARTITION_COUNT = 10
 
+export interface MessageRate {
+    messagesPerSecond: number
+    bytesPerSecond: number
+}
+
 export const getMessageRate = async (
     streamId: StreamID,
     activePartitions: number[],
     node: NetworkNodeFacade,
     subscibeGate: Gate,
     config: Config
-): Promise<number> => {
+): Promise<MessageRate> => {
     let messageCount = 0
+    let bytesSum = 0
     const messageListener = (msg: StreamMessage) => {
         if (msg.getStreamId() === streamId) {
             messageCount++
+            bytesSum += msg.content.length
         }
     }
     node.addMessageListener(messageListener)
@@ -39,8 +46,16 @@ export const getMessageRate = async (
         await node.unsubscribe(streamPartId)
     }
     node.removeMessageListener(messageListener)
-    const partitionMultiplier = activePartitions.length / samplePartitions.length
-    const rate = messageCount / (config.crawler.subscribeDuration / 1000) * partitionMultiplier
-    logger.info(`Message rate ${streamId}: ${rate}`, { messageCount, samplePartitions, activePartitions })
+    const calculateRate = (total: number) => {
+        const elapsedSeconds = (config.crawler.subscribeDuration / 1000)
+        const partitionMultiplier = activePartitions.length / samplePartitions.length
+        return total / elapsedSeconds * partitionMultiplier
+    }
+    const rate = {
+        messagesPerSecond: calculateRate(messageCount),
+        bytesPerSecond: calculateRate(bytesSum)
+    }
+    // eslint-disable-next-line max-len
+    logger.info(`Message rate ${streamId}: messagesPerSecond=${rate.messagesPerSecond}, bytesPerSecond=${rate.bytesPerSecond}`, { messageCount, samplePartitions, activePartitions })
     return rate
 }

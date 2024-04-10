@@ -76,6 +76,7 @@ describe('APIServer', () => {
                 description: '',
                 peerCount: 123,
                 messagesPerSecond: 4.5,
+                bytesPerSecond: 450,
                 publisherCount: 6,
                 subscriberCount: 7
             }
@@ -87,6 +88,7 @@ describe('APIServer', () => {
                         description
                         peerCount
                         messagesPerSecond
+                        bytesPerSecond
                         publisherCount
                         subscriberCount
                     }
@@ -103,6 +105,7 @@ describe('APIServer', () => {
                     description: '',
                     peerCount: 123,
                     messagesPerSecond: 4.56,
+                    bytesPerSecond: 456,
                     publisherCount: null,
                     subscriberCount: null
                 }
@@ -132,6 +135,7 @@ describe('APIServer', () => {
                 description: '',
                 peerCount: 123,
                 messagesPerSecond: 200,
+                bytesPerSecond: 20000,
                 publisherCount: null,
                 subscriberCount: 20
             })
@@ -140,6 +144,7 @@ describe('APIServer', () => {
                 description: '',
                 peerCount: 456,
                 messagesPerSecond: 100,
+                bytesPerSecond: 10000,
                 publisherCount: 10,
                 subscriberCount: 10
             })           
@@ -148,6 +153,7 @@ describe('APIServer', () => {
                 description: '',
                 peerCount: 789,
                 messagesPerSecond: 300,
+                bytesPerSecond: 30000,
                 publisherCount: 20,
                 subscriberCount: null
             })
@@ -164,6 +170,7 @@ describe('APIServer', () => {
             expect(await queryOrderedStreams('ID', 'ASC')).toEqual(['id-1', 'id-2', 'id-3'])
             expect(await queryOrderedStreams('PEER_COUNT', 'DESC')).toEqual(['id-3', 'id-2', 'id-1'])
             expect(await queryOrderedStreams('MESSAGES_PER_SECOND', 'DESC')).toEqual(['id-3', 'id-1', 'id-2'])
+            expect(await queryOrderedStreams('BYTES_PER_SECOND', 'DESC')).toEqual(['id-3', 'id-1', 'id-2'])
             expect(await queryOrderedStreams('PUBLISHER_COUNT', 'DESC')).toEqual(['id-1', 'id-3', 'id-2'])
             expect(await queryOrderedStreams('SUBSCRIBER_COUNT', 'DESC')).toEqual(['id-3', 'id-1', 'id-2'])
         })
@@ -176,6 +183,7 @@ describe('APIServer', () => {
             description: '',
             peerCount: 0,
             messagesPerSecond: 0,
+            bytesPerSecond: 0,
             publisherCount: null,
             subscriberCount: null
         })
@@ -184,6 +192,7 @@ describe('APIServer', () => {
             description: '',
             peerCount: 0,
             messagesPerSecond: 0,
+            bytesPerSecond: 0,
             publisherCount: null,
             subscriberCount: null
         })
@@ -211,6 +220,7 @@ describe('APIServer', () => {
             description: '',
             peerCount: 111,
             messagesPerSecond: 10,
+            bytesPerSecond: 1000,
             publisherCount: 1,
             subscriberCount: 1
         }
@@ -220,6 +230,7 @@ describe('APIServer', () => {
             description: '',
             peerCount: 222,
             messagesPerSecond: 20,
+            bytesPerSecond: 2000,
             publisherCount: 2,
             subscriberCount: 2
         })
@@ -230,6 +241,7 @@ describe('APIServer', () => {
                     description
                     peerCount
                     messagesPerSecond
+                    bytesPerSecond
                     publisherCount
                     subscriberCount
                 }
@@ -247,6 +259,7 @@ describe('APIServer', () => {
                 description: `description-${i}`,
                 peerCount: 0,
                 messagesPerSecond: 0,
+                bytesPerSecond: 0,
                 publisherCount: null,
                 subscriberCount: null
             }
@@ -406,6 +419,7 @@ describe('APIServer', () => {
             description: '',
             peerCount: 10,
             messagesPerSecond: 100,
+            bytesPerSecond: 10000,
             publisherCount: null,
             subscriberCount: null
         })
@@ -414,6 +428,7 @@ describe('APIServer', () => {
             description: '',
             peerCount: 20,
             messagesPerSecond: 200,
+            bytesPerSecond: 20000,
             publisherCount: null,
             subscriberCount: null
         })
@@ -422,12 +437,14 @@ describe('APIServer', () => {
             summary {
                 streamCount
                 messagesPerSecond
+                bytesPerSecond
                 nodeCount
             }
         }`, apiPort)
         expect(summary).toEqual({
             streamCount: 2,
             messagesPerSecond: 300,
+            bytesPerSecond: 30000,
             nodeCount: 2
         })
     })

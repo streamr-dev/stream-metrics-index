@@ -4,6 +4,7 @@ import { ConnectionPool } from './ConnectionPool'
 export interface StreamSummaryRow {
     streamCount: number
     messagesPerSecond: number
+    bytesPerSecond: number
 }
 
 export interface NodeSummaryRow {
@@ -23,7 +24,7 @@ export class SummaryRepository {
 
     async getSummary(): Promise<StreamSummaryRow & NodeSummaryRow> {
         const streamSummaryRows = await this.connectionPool.queryOrExecute<StreamSummaryRow>(
-            'SELECT count(*) as streamCount, sum(messagesPerSecond) as messagesPerSecond FROM streams'
+            'SELECT count(*) as streamCount, sum(messagesPerSecond) as messagesPerSecond, sum(bytesPerSecond) as bytesPerSecond FROM streams'
         )
         const nodeSummaryRows = await this.connectionPool.queryOrExecute<NodeSummaryRow>(
             'SELECT count(*) as nodeCount FROM nodes'

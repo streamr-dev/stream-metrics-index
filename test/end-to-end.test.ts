@@ -82,6 +82,7 @@ const queryStreamMetrics = async (id: string, apiPort: number): Promise<Stream |
                 description
                 peerCount
                 messagesPerSecond
+                bytesPerSecond
                 publisherCount
                 subscriberCount
             }
@@ -216,6 +217,7 @@ describe('end-to-end', () => {
         expect(streamMetrics1.description).toBe('mock-description')
         expect(streamMetrics1.peerCount).toBe(2)
         expect(streamMetrics1.messagesPerSecond).toBeGreaterThan(0)
+        expect(streamMetrics1.bytesPerSecond).toBeGreaterThan(0)
         expect(streamMetrics1.publisherCount).toBe(1)
         expect(streamMetrics1.subscriberCount).toBe(2)
 
@@ -244,6 +246,7 @@ describe('end-to-end', () => {
         expect(streamMetrics2.description).toBe('mock-description')
         expect(streamMetrics2.peerCount).toBe(2)
         expect(streamMetrics2.messagesPerSecond).toBeGreaterThan(0)
+        expect(streamMetrics2.bytesPerSecond).toBeGreaterThan(0)
         expect(streamMetrics2.publisherCount).toBe(1)
         expect(streamMetrics2.subscriberCount).toBe(2)
 

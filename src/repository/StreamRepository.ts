@@ -12,6 +12,7 @@ export interface StreamRow {
     description: string | null
     peerCount: number
     messagesPerSecond: number
+    bytesPerSecond: number
     publisherCount: number | null
     subscriberCount: number | null
     crawlTimestamp: string
@@ -68,7 +69,7 @@ export class StreamRepository {
             params.push(streamIds)
         }
         const sql = createSqlQuery(
-            'SELECT id, description, peerCount, messagesPerSecond, publisherCount, subscriberCount FROM streams',
+            'SELECT id, description, peerCount, messagesPerSecond, bytesPerSecond, publisherCount, subscriberCount FROM streams',
             whereClauses,
             StreamRepository.formOrderByExpression(orderBy ?? StreamOrderBy.ID, orderDirection ?? OrderDirection.ASC)
         )
@@ -86,6 +87,8 @@ export class StreamRepository {
                     return 'peerCount'
                 case StreamOrderBy.MESSAGES_PER_SECOND:
                     return 'messagesPerSecond'
+                case StreamOrderBy.BYTES_PER_SECOND:
+                    return 'bytesPerSecond'
                 case StreamOrderBy.PUBLISHER_COUNT:
                     return 'publisherCount'
                 case StreamOrderBy.SUBSCRIBER_COUNT:
@@ -132,11 +135,27 @@ export class StreamRepository {
     async replaceStream(stream: Omit<StreamRow, 'crawlTimestamp'>): Promise<void> {
         await this.connectionPool.queryOrExecute(
             `REPLACE INTO streams (
-                id, description, peerCount, messagesPerSecond, publisherCount, subscriberCount, crawlTimestamp
+                id,
+                description,
+                peerCount,
+                messagesPerSecond,
+                bytesPerSecond,
+                publisherCount,
+                subscriberCount,
+                crawlTimestamp
             ) VALUES (
-                ?, ?, ?, ?, ?, ?, ?
+                ?, ?, ?, ?, ?, ?, ?, ?
             )`,
-            [stream.id, stream.description, stream.peerCount, stream.messagesPerSecond, stream.publisherCount, stream.subscriberCount, new Date()]
+            [
+                stream.id,
+                stream.description,
+                stream.peerCount,
+                stream.messagesPerSecond,
+                stream.bytesPerSecond,
+                stream.publisherCount,
+                stream.subscriberCount,
+                new Date()
+            ]
         )
     }
 }
