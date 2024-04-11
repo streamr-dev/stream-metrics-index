@@ -4,10 +4,12 @@ import { range } from 'lodash'
 import { MAX_PARTITION_COUNT, getMessageRate } from '../src/crawler/messageRate'
 
 const STREAM_ID = toStreamID('stream-id')
+const CONTENT_LENGTH = 100
 
 const createMockMessage = (): Partial<StreamMessage> => {
     return {
-        getStreamId: () => STREAM_ID
+        getStreamId: () => STREAM_ID,
+        content: new Uint8Array(range(CONTENT_LENGTH))
     }
 }
 
@@ -38,7 +40,8 @@ describe('messageRate', () => {
                 subscribeDuration: 200
             }
         } as any)
-        expect(actual).toEqual(15)
+        expect(actual.messagesPerSecond).toEqual(15)
+        expect(actual.bytesPerSecond).toEqual(1500)
         expect(node.subscribe).toBeCalledTimes(3)
         expect(node.subscribe.mock.calls.flat().sort()).toEqual([
             toStreamPartID(STREAM_ID, 1),
@@ -56,7 +59,8 @@ describe('messageRate', () => {
                 subscribeDuration: 200
             }
         } as any)
-        expect(actual).toEqual(15 * partitionMultiplier)
+        expect(actual.messagesPerSecond).toEqual(15 * partitionMultiplier)
+        expect(actual.bytesPerSecond).toEqual(1500 * partitionMultiplier)
         expect(node.subscribe).toBeCalledTimes(MAX_PARTITION_COUNT)
     })
 })

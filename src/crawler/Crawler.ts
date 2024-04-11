@@ -191,7 +191,7 @@ export class Crawler {
         }
         try {
             const peerIds = new Set(...peersByPartition.values())
-            const messagesPerSecond = (peerIds.size > 0)
+            const messageRate = (peerIds.size > 0)
                 ? await getMessageRate(
                     id, 
                     [...peersByPartition.keys()],
@@ -199,7 +199,7 @@ export class Crawler {
                     subscribeGate,
                     this.config
                 )
-                : 0
+                : { messagesPerSecond: 0, bytesPerSecond: 0 }
             const publisherCount = await this.client.getPublisherOrSubscriberCount(id, StreamPermission.PUBLISH)
             const subscriberCount = await this.client.getPublisherOrSubscriberCount(id, StreamPermission.SUBSCRIBE)
             logger.info(`Replace ${id}`)
@@ -207,7 +207,8 @@ export class Crawler {
                 id,
                 description: metadata.description ?? null,
                 peerCount: peerIds.size,
-                messagesPerSecond,
+                messagesPerSecond: messageRate.messagesPerSecond,
+                bytesPerSecond: messageRate.bytesPerSecond,
                 publisherCount,
                 subscriberCount
             })
@@ -244,6 +245,7 @@ export class Crawler {
                 description: payload.metadata.description ?? null,
                 peerCount: 0,
                 messagesPerSecond: 0,
+                bytesPerSecond: 0,
                 publisherCount: 1,
                 subscriberCount: 1
             })

@@ -11,6 +11,8 @@ export class Stream {
     peerCount!: number
     @Field(() => Float)
     messagesPerSecond!: number
+    @Field(() => Float)
+    bytesPerSecond!: number
     @Field(() => Int, { nullable: true })
     publisherCount!: number | null
     @Field(() => Int, { nullable: true })
@@ -22,6 +24,7 @@ export enum StreamOrderBy {
     DESCRIPTION = 'DESCRIPTION',
     PEER_COUNT = 'PEER_COUNT',
     MESSAGES_PER_SECOND = 'MESSAGES_PER_SECOND',
+    BYTES_PER_SECOND = 'BYTES_PER_SECOND',
     SUBSCRIBER_COUNT = 'SUBSCRIBER_COUNT',
     PUBLISHER_COUNT = 'PUBLISHER_COUNT'
 }
