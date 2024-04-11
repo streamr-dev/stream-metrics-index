@@ -10,25 +10,32 @@ const logger = new Logger(module)
 // If there are many partitions, we approximate the message rate of a stream by analyzing only some of the partitions.
 // We assume that traffic levels in each partitions are be quite similar.
 export const MAX_PARTITION_COUNT = 10
+const MAX_MESSAGE_SIZE = 1048576
 
 export interface MessageRate {
     messagesPerSecond: number
     bytesPerSecond: number
+    sampleMessage?: StreamMessage
 }
 
 export const getMessageRate = async (
     streamId: StreamID,
     activePartitions: number[],
+    isPublicStream: boolean,
     node: NetworkNodeFacade,
     subscibeGate: Gate,
     config: Config
 ): Promise<MessageRate> => {
     let messageCount = 0
     let bytesSum = 0
+    let sampleMessage: StreamMessage | undefined = undefined
     const messageListener = (msg: StreamMessage) => {
         if (msg.getStreamId() === streamId) {
             messageCount++
             bytesSum += msg.content.length
+            if ((sampleMessage === undefined) && isPublicStream && (msg.content.length <= MAX_MESSAGE_SIZE)) {
+                sampleMessage = msg
+            }
         }
     }
     node.addMessageListener(messageListener)
@@ -53,7 +60,8 @@ export const getMessageRate = async (
     }
     const rate = {
         messagesPerSecond: calculateRate(messageCount),
-        bytesPerSecond: calculateRate(bytesSum)
+        bytesPerSecond: calculateRate(bytesSum),
+        sampleMessage
     }
     // eslint-disable-next-line max-len
     logger.info(`Message rate ${streamId}: messagesPerSecond=${rate.messagesPerSecond}, bytesPerSecond=${rate.bytesPerSecond}`, { messageCount, samplePartitions, activePartitions })

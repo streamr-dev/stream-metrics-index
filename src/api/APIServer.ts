@@ -11,6 +11,7 @@ import { Config, CONFIG_TOKEN } from '../Config'
 import { StreamResolver } from './StreamResolver'
 import { SummaryResolver } from './SummaryResolver'
 import { NodeResolver } from './NodeResolver'
+import { MessageResolver } from './MessageResolver'
 
 const logger = new Logger(module)
 
@@ -30,7 +31,7 @@ export class APIServer {
 
     async start(): Promise<void> {
         const schema = await buildSchema({
-            resolvers: [StreamResolver, NodeResolver, SummaryResolver],
+            resolvers: [StreamResolver, MessageResolver, NodeResolver, SummaryResolver],
             container: Container,
             validate: false
         })

@@ -15,6 +15,12 @@ CREATE TABLE IF NOT EXISTS streams (
     INDEX streams_subscriberCount (subscriberCount)
 );
 
+CREATE TABLE IF NOT EXISTS sample_messages (
+    streamId VARCHAR(500) NOT NULL PRIMARY KEY,
+    content MEDIUMBLOB NOT NULL,
+    contentType VARCHAR(6) NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS nodes (
     id CHAR(40) NOT NULL PRIMARY KEY,
     ipAddress VARCHAR(15)
