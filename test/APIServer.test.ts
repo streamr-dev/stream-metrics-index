@@ -289,9 +289,10 @@ describe('APIServer', () => {
 
         it('JSON', async () => {
             const streamId = `stream-${Date.now()}` as StreamID
+            const content = { foo: 'bar' }
             const repository = Container.get(MessageRepository)
             await repository.replaceSampleMessage({
-                content: utf8ToBinary('mock-json-content'),
+                content: utf8ToBinary(JSON.stringify(content)),
                 contentType: ContentType.JSON
             }, streamId)
             const sample = await queryAPI(`{
@@ -301,7 +302,7 @@ describe('APIServer', () => {
                 }
             }`, apiPort)
             expect(sample).toEqual({
-                content: 'mock-json-content',
+                content: JSON.stringify(content),
                 contentType: 'JSON'
             })
         })
