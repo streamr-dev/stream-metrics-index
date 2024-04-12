@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS streams (
 CREATE TABLE IF NOT EXISTS sample_messages (
     streamId VARCHAR(500) NOT NULL PRIMARY KEY,
     content MEDIUMBLOB NOT NULL,
-    contentType VARCHAR(6) NOT NULL
+    contentType VARCHAR(50) NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS nodes (
