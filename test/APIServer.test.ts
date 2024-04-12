@@ -10,8 +10,11 @@ import { createDatabase, queryAPI } from '../src/utils'
 import { dropTestDatabaseIfExists, TEST_DATABASE_NAME } from './utils'
 import { NodeRepository } from '../src/repository/NodeRepository'
 import { DhtAddress, createRandomDhtAddress } from '@streamr/dht'
-import { Multimap } from '@streamr/utils'
+import { Multimap, utf8ToBinary } from '@streamr/utils'
 import { StreamPartID, StreamPartIDUtils } from '@streamr/protocol'
+import { MessageRepository } from '../src/repository/MessageRepository'
+import { ContentType } from '../src/entities/Message'
+import { StreamID } from '@streamr/protocol'
 
 const storeTestTopology = async (
     streamParts: {
@@ -280,6 +283,59 @@ describe('APIServer', () => {
             id: 'id-3',
             description: 'description-3'
         }])
+    })
+
+    describe('sampleMessage', () => {
+
+        it('JSON', async () => {
+            const streamId = `stream-${Date.now()}` as StreamID
+            const content = { foo: 'bar' }
+            const repository = Container.get(MessageRepository)
+            await repository.replaceSampleMessage({
+                content: utf8ToBinary(JSON.stringify(content)),
+                contentType: ContentType.JSON
+            }, streamId)
+            const sample = await queryAPI(`{
+                sampleMessage(stream: "${streamId}") {
+                    content
+                    contentType
+                }
+            }`, apiPort)
+            expect(sample).toEqual({
+                content: JSON.stringify(content),
+                contentType: 'JSON'
+            })
+        })
+
+        it('binary', async () => {
+            const streamId = `stream-${Date.now()}` as StreamID
+            const repository = Container.get(MessageRepository)
+            await repository.replaceSampleMessage({
+                content: new Uint8Array([1, 2, 3, 4]),
+                contentType: ContentType.BINARY
+            }, streamId)
+            const sample = await queryAPI(`{
+                sampleMessage(stream: "${streamId}") {
+                    content
+                    contentType
+                }
+            }`, apiPort)
+            expect(sample).toEqual({
+                content: 'AQIDBA==',
+                contentType: 'BINARY'
+            })
+        })
+
+        it('not found', async () => {
+            const streamId = `stream-${Date.now()}` as StreamID
+            const sample = await queryAPI(`{
+                sampleMessage(stream: "${streamId}") {
+                    content
+                    contentType
+                }
+            }`, apiPort)
+            expect(sample).toBeNull()
+        })
     })
 
     describe('nodes', () => {

@@ -15,6 +15,7 @@ import { NetworkNodeFacade } from './NetworkNodeFacade'
 import { MAX_SUBSCRIPTION_COUNT, SubscribeGate } from './SubscribeGate'
 import { Topology } from './Topology'
 import { getMessageRate } from './messageRate'
+import { MessageRepository, convertStreamMessageToMessageRow } from '../repository/MessageRepository'
 
 const logger = new Logger(module)
 
@@ -97,10 +98,15 @@ export const crawlTopology = async (
     return new Topology([...nodeInfos.values()])
 }
 
+const isPublicStream = (subscriberCount: number | null) => {
+    return subscriberCount === null
+}
+
 @Service()
 export class Crawler {
 
     private readonly streamRepository: StreamRepository
+    private readonly messageRepository: MessageRepository
     private readonly nodeRepository: NodeRepository
     private readonly client: StreamrClientFacade
     private readonly config: Config
@@ -109,11 +115,13 @@ export class Crawler {
 
     constructor(
         @Inject() streamRepository: StreamRepository,
+        @Inject() messageRepository: MessageRepository,
         @Inject() nodeRepository: NodeRepository,
         @Inject() client: StreamrClientFacade,
         @Inject(CONFIG_TOKEN) config: Config
     ) {
         this.streamRepository = streamRepository
+        this.messageRepository = messageRepository
         this.nodeRepository = nodeRepository
         this.client = client
         this.config = config
@@ -190,18 +198,20 @@ export class Crawler {
             peersByPartition.set(partition, topology.getPeers(toStreamPartID(id, partition)))
         }
         try {
+            const publisherCount = await this.client.getPublisherOrSubscriberCount(id, StreamPermission.PUBLISH)
+            const subscriberCount = await this.client.getPublisherOrSubscriberCount(id, StreamPermission.SUBSCRIBE)
             const peerIds = new Set(...peersByPartition.values())
             const messageRate = (peerIds.size > 0)
                 ? await getMessageRate(
                     id, 
                     [...peersByPartition.keys()],
+                    isPublicStream(subscriberCount),
                     await this.client.getNetworkNodeFacade(),
                     subscribeGate,
                     this.config
                 )
                 : { messagesPerSecond: 0, bytesPerSecond: 0 }
-            const publisherCount = await this.client.getPublisherOrSubscriberCount(id, StreamPermission.PUBLISH)
-            const subscriberCount = await this.client.getPublisherOrSubscriberCount(id, StreamPermission.SUBSCRIBE)
+
             logger.info(`Replace ${id}`)
             await this.streamRepository.replaceStream({
                 id,
@@ -212,6 +222,10 @@ export class Crawler {
                 publisherCount,
                 subscriberCount
             })
+            const sampleMessage = (messageRate.sampleMessage !== undefined)
+                ? convertStreamMessageToMessageRow(messageRate.sampleMessage)
+                : null
+            await this.messageRepository.replaceSampleMessage(sampleMessage, id)
         } catch (e: any) {
             logger.error(`Failed to analyze ${id}`, e)
         }

@@ -35,13 +35,14 @@ const createMockNode = (): any => {
 describe('messageRate', () => {
     it('happy path', async () => {
         const node = createMockNode()
-        const actual = await getMessageRate(STREAM_ID, [1, 4, 5], node, new Gate(true), {
+        const actual = await getMessageRate(STREAM_ID, [1, 4, 5], true, node, new Gate(true), {
             crawler: {
                 subscribeDuration: 200
             }
         } as any)
         expect(actual.messagesPerSecond).toEqual(15)
         expect(actual.bytesPerSecond).toEqual(1500)
+        expect(actual.sampleMessage).toBeDefined()
         expect(node.subscribe).toBeCalledTimes(3)
         expect(node.subscribe.mock.calls.flat().sort()).toEqual([
             toStreamPartID(STREAM_ID, 1),
@@ -54,13 +55,14 @@ describe('messageRate', () => {
         const partitionMultiplier = 4
         const partitions = range(MAX_PARTITION_COUNT * partitionMultiplier)
         const node = createMockNode()
-        const actual = await getMessageRate(STREAM_ID, partitions, node, new Gate(true), {
+        const actual = await getMessageRate(STREAM_ID, partitions, true, node, new Gate(true), {
             crawler: {
                 subscribeDuration: 200
             }
         } as any)
         expect(actual.messagesPerSecond).toEqual(15 * partitionMultiplier)
         expect(actual.bytesPerSecond).toEqual(1500 * partitionMultiplier)
+        expect(actual.sampleMessage).toBeDefined()
         expect(node.subscribe).toBeCalledTimes(MAX_PARTITION_COUNT)
     })
 })
