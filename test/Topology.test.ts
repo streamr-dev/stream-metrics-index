@@ -16,13 +16,13 @@ describe('Topology', () => {
             peerDescriptor: nodes[0],
             streamPartitions: [{
                 id: STREAM_PART_ID_1,
-                deliveryLayerNeighbors: [nodes[1], nodes[2]]
+                contentDeliveryLayerNeighbors: [nodes[1], nodes[2]]
             }]
         }, {
             peerDescriptor: nodes[2],
             streamPartitions: [{
                 id: STREAM_PART_ID_2,
-                deliveryLayerNeighbors: [nodes[0], nodes[1], nodes[2]]
+                contentDeliveryLayerNeighbors: [nodes[0], nodes[1], nodes[2]]
             }]
         }] as any)
         expect([...topology.getNeighbors(getNodeIdFromPeerDescriptor(nodes[0]), STREAM_PART_ID_1)]).toIncludeSameMembers([

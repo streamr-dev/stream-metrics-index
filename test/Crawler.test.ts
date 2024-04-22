@@ -21,7 +21,7 @@ describe('Crawler', () => {
             streamPartitions: [{ 
                 id: STREAM_PART_ID,
                 controlLayerNeighbors: [],
-                deliveryLayerNeighbors: neighbors.get(getNodeIdFromPeerDescriptor(peerDescriptor)) ?? []
+                contentDeliveryLayerNeighbors: neighbors.get(getNodeIdFromPeerDescriptor(peerDescriptor)) ?? []
             }],
             version: ''
         }
@@ -58,7 +58,7 @@ describe('Crawler', () => {
         const topology = await crawlTopology(
             localNode as any,
             [nodes[0], nodes[5]],
-            (response: NodeInfo) => response.streamPartitions[0].deliveryLayerNeighbors,
+            (response: NodeInfo) => response.streamPartitions[0].contentDeliveryLayerNeighbors,
             ''
         )
         expect(localNode.fetchNodeInfo).toHaveBeenCalledTimes(nodes.length)
