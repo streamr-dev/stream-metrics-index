@@ -58,7 +58,7 @@ const createNodeInfoLogOutput = (nodeInfo: NodeInfo) => {
         streamPartitions: nodeInfo.streamPartitions.map((sp: any) => ({
             id: sp.id,
             controlLayerNeighbors: sp.controlLayerNeighbors.map((n: PeerDescriptor) => getNodeIdFromPeerDescriptor(n)),
-            deliveryLayerNeighbors: sp.deliveryLayerNeighbors.map((n: PeerDescriptor) => getNodeIdFromPeerDescriptor(n))
+            contentDeliveryLayerNeighbors: sp.contentDeliveryLayerNeighbors.map((n: PeerDescriptor) => getNodeIdFromPeerDescriptor(n))
         })),
         version: nodeInfo.version
     }
@@ -275,7 +275,7 @@ export class Crawler {
                 const streamPartitions = nodeInfo.streamPartitions.filter(
                     (sp) => StreamPartIDUtils.getStreamID(sp.id as StreamPartID) === payload.streamId
                 )
-                return (streamPartitions.map((sp) => sp.deliveryLayerNeighbors)).flat()
+                return (streamPartitions.map((sp) => sp.contentDeliveryLayerNeighbors)).flat()
             }, `stream-${payload.streamId}-${Date.now()}`)
             // TODO could add new nodes and neighbors to NodeRepository?
             await this.analyzeStream(payload.streamId, payload.metadata, topology, this.subscribeGate!)
