@@ -40,3 +40,7 @@ npm run test
 ## API
 
 The API reference is available at the GraphQL endpoint (see "Docs" in the upper right corner).
+
+## Future improvements
+
+Use node:18-bullseye-slim instead of node:18-bullseye, the image is half the size (compressed). Potential problem: "npm ci" (on arm64 at least) requires node-gyp requires python, so it must be installed first ("half the size" is only without python...).
