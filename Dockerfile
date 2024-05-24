@@ -10,6 +10,7 @@ FROM node:18-bullseye-slim
 USER node
 WORKDIR /usr/src/app
 COPY --chown=node:node --from=build /usr/src/app/ .
+RUN apt-get update && apt-get install -y python3
 RUN npm ci --omit=dev
 
 EXPOSE 4001/tcp
