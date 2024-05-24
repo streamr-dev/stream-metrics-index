@@ -6,11 +6,10 @@ RUN npm run build
 RUN chmod +x dist/bin/*.js
 RUN rm -rf node_modules
 
-FROM node:18-bullseye-slim
+FROM node:18-bullseye
 USER node
 WORKDIR /usr/src/app
 COPY --chown=node:node --from=build /usr/src/app/ .
-RUN apt-get update && apt-get install -y python3
 RUN npm ci --omit=dev
 
 EXPOSE 4001/tcp

@@ -4,6 +4,8 @@
   "private": true,
   "scripts": {
     "build": "tsc -b tsconfig.build.json",
+    "docker:build": "docker build --tag streamr/stream-metrics-index:latest .",
+    "docker:push": "docker buildx build --platform linux/amd64,linux/arm64 --tag streamr/stream-metrics-index:latest --push .",
     "test": "jest --runInBand",
     "eslint": "eslint --cache --cache-location=node_modules/.cache/.eslintcache/ '*/**/*.{js,ts}'"
   },
