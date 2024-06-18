@@ -200,7 +200,7 @@ export class Crawler {
         try {
             const publisherCount = await this.client.getPublisherOrSubscriberCount(id, StreamPermission.PUBLISH)
             const subscriberCount = await this.client.getPublisherOrSubscriberCount(id, StreamPermission.SUBSCRIBE)
-            const peerIds = new Set(...peersByPartition.values())
+            const peerIds = new Set([...peersByPartition.values()].map((s) => [...s]).flat())
             const messageRate = (peerIds.size > 0)
                 ? await getMessageRate(
                     id, 
