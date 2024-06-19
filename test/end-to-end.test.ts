@@ -5,7 +5,7 @@ import { StreamPartID, toStreamPartID } from '@streamr/protocol'
 import StreamrClient, { CONFIG_TEST, NetworkNodeType, PeerDescriptor, StreamID, StreamPermission, StreamrClientConfig } from '@streamr/sdk'
 import { NetworkNode, createNetworkNode } from '@streamr/trackerless-network'
 import { setAbortableInterval, waitForCondition } from '@streamr/utils'
-import { random, range, uniq, without } from 'lodash'
+import { sample, uniq, without } from 'lodash'
 import Container from 'typedi'
 import { CONFIG_TOKEN } from '../src/Config'
 import { APIServer } from '../src/api/APIServer'
@@ -20,7 +20,7 @@ const PUBLISHER_PRIVATE_KEY = '0x00000000000000000000000000000000000000000000000
 const SUBSCRIBER_PRIVATE_KEY = '0x0000000000000000000000000000000000000000000000000000000000000002'
 const ENTRY_POINT_PORT = 40501
 const PARTITION_COUNT = 3
-const ACTIVE_PARTITION_COUNT = 2
+const ACTIVE_PARTITIONS = [1, 2]
 const DOCKER_DEV_LOOPBACK_IP_ADDRESS = '10.200.10.1'
 
 const startEntryPoint = async (): Promise<NetworkNode> => {
@@ -165,7 +165,7 @@ describe('end-to-end', () => {
     }
 
     const startPublisherAndSubscriberForStream = async (streamId: StreamID, publishingAbortControler: AbortSignal) => {
-        return Promise.all(range(ACTIVE_PARTITION_COUNT).map(async (partition: number) => {
+        return Promise.all(ACTIVE_PARTITIONS.map(async (partition: number) => {
             const streamPartDefinition = {
                 streamId: streamId,
                 partition
@@ -262,7 +262,7 @@ describe('end-to-end', () => {
         ])
         expect(uniq(nodes.map((n) => n.ipAddress))).toEqual([DOCKER_DEV_LOOPBACK_IP_ADDRESS])
 
-        const randomActiveStreamPartId = toStreamPartID(privateStream.id, random(ACTIVE_PARTITION_COUNT - 1))
+        const randomActiveStreamPartId = toStreamPartID(privateStream.id, sample(ACTIVE_PARTITIONS)!)
         const neighbors = (await queryNeighbors(await publisher.getNodeId(), randomActiveStreamPartId, apiPort))!
         expect(neighbors).toEqual([await subscriber.getNodeId()])
 
