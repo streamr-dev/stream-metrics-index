@@ -1,5 +1,5 @@
-import { StreamMessage, toStreamID, toStreamPartID } from '@streamr/protocol'
-import { Gate } from '@streamr/utils'
+import { StreamMessage } from '@streamr/trackerless-network'
+import { Gate, toStreamID, toStreamPartID } from '@streamr/utils'
 import { range } from 'lodash'
 import { MAX_PARTITION_COUNT, getMessageRate } from '../src/crawler/messageRate'
 
@@ -8,8 +8,15 @@ const CONTENT_LENGTH = 100
 
 const createMockMessage = (): Partial<StreamMessage> => {
     return {
-        getStreamId: () => STREAM_ID,
-        content: new Uint8Array(range(CONTENT_LENGTH))
+        messageId: {
+            streamId: STREAM_ID,
+        } as any,
+        body: {
+            oneofKind: 'contentMessage',
+            contentMessage: {
+                content: new Uint8Array(range(CONTENT_LENGTH))
+            } as any
+        }
     }
 }
 

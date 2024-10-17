@@ -1,8 +1,7 @@
 import { getNodeIdFromPeerDescriptor } from '@streamr/dht'
-import { StreamPartIDUtils } from '@streamr/protocol'
 import { DhtAddress, StreamPartID } from '@streamr/sdk'
 import { NodeInfo } from '@streamr/trackerless-network'
-import { Multimap, numberToIpv4 } from '@streamr/utils'
+import { Multimap, numberToIpv4, StreamPartIDUtils } from '@streamr/utils'
 
 export interface Node {
     id: DhtAddress

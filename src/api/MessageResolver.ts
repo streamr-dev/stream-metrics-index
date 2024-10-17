@@ -1,9 +1,8 @@
+import { binaryToUtf8, toStreamID } from '@streamr/utils'
 import { Arg, Query, Resolver } from 'type-graphql'
 import { Inject, Service } from 'typedi'
 import { ContentType, Message } from '../entities/Message'
 import { MessageRepository } from '../repository/MessageRepository'
-import { toStreamID } from '@streamr/protocol'
-import { binaryToUtf8 } from '@streamr/utils'
 
 @Resolver()
 @Service()

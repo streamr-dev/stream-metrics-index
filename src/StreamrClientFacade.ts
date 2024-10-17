@@ -76,16 +76,16 @@ export class StreamrClientFacade {
         return stream.getMetadata()
     }
 
-    on(name: 'createStream', listener: (payload: StreamCreationEvent) => void): void {
+    on(name: 'streamCreated', listener: (payload: StreamCreationEvent) => void): void {
         this.client.on(name, listener)
     }
 
-    off(name: 'createStream', listener: (payload: StreamCreationEvent) => void): void {
+    off(name: 'streamCreated', listener: (payload: StreamCreationEvent) => void): void {
         this.client.off(name, listener)
     }
 
     async getNetworkNodeFacade(): Promise<NetworkNodeFacade> {
-        const node = (await this.client.getNode()) as NetworkNode
+        const node = (await this.client.getNode().getNode()) as NetworkNode
         return new NetworkNodeFacade(node, this.config)
     }
 

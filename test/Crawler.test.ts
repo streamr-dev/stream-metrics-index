@@ -1,8 +1,8 @@
 import { DhtAddress, PeerDescriptor, getNodeIdFromPeerDescriptor } from '@streamr/dht'
 import { NodeInfo } from '@streamr/trackerless-network'
+import { StreamPartIDUtils } from '@streamr/utils'
 import { crawlTopology } from '../src/crawler/Crawler'
 import { createTestPeerDescriptor } from './utils'
-import { StreamPartIDUtils } from '@streamr/protocol'
 
 const STREAM_PART_ID = StreamPartIDUtils.parse('stream#0')
 

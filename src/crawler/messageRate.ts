@@ -1,6 +1,5 @@
-import { StreamID, toStreamPartID } from '@streamr/protocol'
-import { StreamMessage } from '@streamr/sdk'
-import { Gate, Logger, wait } from '@streamr/utils'
+import { StreamMessage } from '@streamr/trackerless-network'
+import { Gate, Logger, StreamID, toStreamPartID, wait } from '@streamr/utils'
 import { sampleSize } from 'lodash'
 import { Config } from '../Config'
 import { NetworkNodeFacade } from './NetworkNodeFacade'
@@ -30,10 +29,11 @@ export const getMessageRate = async (
     let bytesSum = 0
     let sampleMessage: StreamMessage | undefined = undefined
     const messageListener = (msg: StreamMessage) => {
-        if (msg.getStreamId() === streamId) {
+        if ((msg.messageId!.streamId === streamId) && (msg.body.oneofKind === 'contentMessage')) {
             messageCount++
-            bytesSum += msg.content.length
-            if ((sampleMessage === undefined) && isPublicStream && (msg.content.length <= MAX_MESSAGE_SIZE)) {
+            const content = msg.body.contentMessage.content
+            bytesSum += content.length
+            if ((sampleMessage === undefined) && isPublicStream && (content.length <= MAX_MESSAGE_SIZE)) {
                 sampleMessage = msg
             }
         }

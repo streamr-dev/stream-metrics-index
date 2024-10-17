@@ -1,13 +1,13 @@
 import { PeerDescriptor, getNodeIdFromPeerDescriptor } from '@streamr/dht'
-import { StreamID, StreamPartID, StreamPartIDUtils, toStreamPartID } from '@streamr/protocol'
 import { DhtAddress, Stream, StreamCreationEvent, StreamMetadata, StreamPermission } from '@streamr/sdk'
 import { NodeInfo } from '@streamr/trackerless-network'
-import { Logger, binaryToHex, wait } from '@streamr/utils'
+import { Logger, StreamID, StreamPartID, StreamPartIDUtils, binaryToHex, toStreamPartID, wait } from '@streamr/utils'
 import { difference, range, sortBy } from 'lodash'
 import pLimit from 'p-limit'
 import { Inject, Service } from 'typedi'
 import { CONFIG_TOKEN, Config } from '../Config'
 import { StreamrClientFacade } from '../StreamrClientFacade'
+import { MessageRepository, convertStreamMessageToMessageRow } from '../repository/MessageRepository'
 import { NodeRepository } from '../repository/NodeRepository'
 import { StreamRepository } from '../repository/StreamRepository'
 import { collect, retry } from '../utils'
@@ -15,7 +15,6 @@ import { NetworkNodeFacade } from './NetworkNodeFacade'
 import { MAX_SUBSCRIPTION_COUNT, SubscribeGate } from './SubscribeGate'
 import { Topology } from './Topology'
 import { getMessageRate } from './messageRate'
-import { MessageRepository, convertStreamMessageToMessageRow } from '../repository/MessageRepository'
 
 const logger = new Logger(module)
 
@@ -134,7 +133,7 @@ export class Crawler {
         const networkNodeFacade = await this.client.getNetworkNodeFacade()
         this.subscribeGate = new SubscribeGate(networkNodeFacade)
         this.onStreamCreated = (payload) => this.createNewStreamListener(payload, networkNodeFacade)
-        this.client.on('createStream', this.onStreamCreated)
+        this.client.on('streamCreated', this.onStreamCreated)
         let iterationIndex = 0
         // eslint-disable-next-line no-constant-condition
         while (true) {
@@ -290,7 +289,7 @@ export class Crawler {
 
     stop(): void {
         logger.info('Stop')
-        this.client.off('createStream', this.onStreamCreated!)
+        this.client.off('streamCreated', this.onStreamCreated!)
         this.subscribeGate!.destroy()
     }
 }
