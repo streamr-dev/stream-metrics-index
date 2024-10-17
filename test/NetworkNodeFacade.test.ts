@@ -43,7 +43,7 @@ const LEGACY_INFO = {
         deprecatedContentDeliveryLayerNeighbors: [createTestPeerDescriptor()],
         contentDeliveryLayerNeighbors: []
     }],
-    version: '101.1.2'
+    version: '101.1.1-beta.1'
 }
 
 const createMockNode = (rawNodeInfo: NodeInfo): Partial<NetworkNode>  => {
