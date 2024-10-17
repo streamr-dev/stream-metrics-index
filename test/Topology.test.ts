@@ -1,7 +1,7 @@
 import { PeerDescriptor, createRandomDhtAddress, getNodeIdFromPeerDescriptor, getRawFromDhtAddress } from '@streamr/dht'
-import { Topology } from '../src/crawler/Topology'
-import { StreamPartIDUtils } from '@streamr/protocol'
+import { StreamPartIDUtils } from '@streamr/utils'
 import { range } from 'lodash'
+import { Topology } from '../src/crawler/Topology'
 
 const STREAM_PART_ID_1 = StreamPartIDUtils.parse('stream#1')
 const STREAM_PART_ID_2 = StreamPartIDUtils.parse('stream#2')

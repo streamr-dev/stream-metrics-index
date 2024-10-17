@@ -1,5 +1,5 @@
-import { StreamPartIDUtils, toStreamID } from '@streamr/protocol'
 import { DhtAddress } from '@streamr/sdk'
+import { StreamPartIDUtils, toStreamID } from '@streamr/utils'
 import { DeepOmit } from 'ts-essentials'
 import { Arg, FieldResolver, Int, Query, Resolver, Root } from 'type-graphql'
 import { Inject, Service } from 'typedi'

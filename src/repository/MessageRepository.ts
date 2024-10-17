@@ -1,8 +1,8 @@
+import { StreamMessage, ContentType as StreamMessageContentType } from '@streamr/trackerless-network'
+import { StreamID } from '@streamr/utils'
 import { Inject, Service } from 'typedi'
-import { ConnectionPool } from './ConnectionPool'
-import { StreamID } from '@streamr/protocol'
 import { ContentType } from '../entities/Message'
-import { StreamMessage, ContentType as StreamMessageContentType } from '@streamr/protocol'
+import { ConnectionPool } from './ConnectionPool'
 
 export interface MessageRow {
     content: Uint8Array
@@ -10,16 +10,19 @@ export interface MessageRow {
 }
 
 export const convertStreamMessageToMessageRow = (msg: StreamMessage): MessageRow => {
+    if (msg.body.oneofKind !== 'contentMessage') {
+        throw new Error('Assertion failed: must be content message')
+    }
     let contentType
-    if (msg.contentType === StreamMessageContentType.JSON) {
+    if (msg.body.contentMessage.contentType === StreamMessageContentType.JSON) {
         contentType = ContentType.JSON
-    } else if (msg.contentType === StreamMessageContentType.BINARY) {
+    } else if (msg.body.contentMessage.contentType === StreamMessageContentType.BINARY) {
         contentType = ContentType.BINARY
     } else {
-        throw new Error(`Assertion failed: unknown content type ${msg.contentType}`)
+        throw new Error(`Assertion failed: unknown content type ${msg.body.contentMessage.contentType}`)
     }
     return { 
-        content: msg.content,
+        content: msg.body.contentMessage.content,
         contentType
     }
 }

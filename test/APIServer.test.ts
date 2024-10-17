@@ -1,20 +1,18 @@
 import 'reflect-metadata'
 
+import { createRandomDhtAddress, DhtAddress } from '@streamr/dht'
+import { Multimap, StreamID, StreamPartID, StreamPartIDUtils, utf8ToBinary } from '@streamr/utils'
 import { range, without } from 'lodash'
 import Container from 'typedi'
 import { APIServer } from '../src/api/APIServer'
 import { CONFIG_TOKEN } from '../src/Config'
-import { StreamrClientFacade } from '../src/StreamrClientFacade'
+import { ContentType } from '../src/entities/Message'
+import { MessageRepository } from '../src/repository/MessageRepository'
+import { NodeRepository } from '../src/repository/NodeRepository'
 import { StreamRepository } from '../src/repository/StreamRepository'
+import { StreamrClientFacade } from '../src/StreamrClientFacade'
 import { createDatabase, queryAPI } from '../src/utils'
 import { dropTestDatabaseIfExists, TEST_DATABASE_NAME } from './utils'
-import { NodeRepository } from '../src/repository/NodeRepository'
-import { DhtAddress, createRandomDhtAddress } from '@streamr/dht'
-import { Multimap, utf8ToBinary } from '@streamr/utils'
-import { StreamPartID, StreamPartIDUtils } from '@streamr/protocol'
-import { MessageRepository } from '../src/repository/MessageRepository'
-import { ContentType } from '../src/entities/Message'
-import { StreamID } from '@streamr/protocol'
 
 const storeTestTopology = async (
     streamParts: {

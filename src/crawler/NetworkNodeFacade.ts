@@ -1,6 +1,6 @@
 import { PeerDescriptor } from '@streamr/dht'
-import { StreamMessage, StreamPartID } from '@streamr/sdk'
-import { NetworkNode, NodeInfo, streamPartIdToDataKey } from '@streamr/trackerless-network'
+import { NetworkNode, NodeInfo, StreamMessage, streamPartIdToDataKey } from '@streamr/trackerless-network'
+import { StreamPartID } from '@streamr/utils'
 import EventEmitter3 from 'eventemitter3'
 import { Config } from '../Config'
 
@@ -52,7 +52,7 @@ export class NetworkNodeFacade {
 
     async fetchStreamPartEntryPoints(streamPartId: StreamPartID): Promise<PeerDescriptor[]> {
         const key = streamPartIdToDataKey(streamPartId)
-        return (await this.node.stack.getLayer0Node().fetchDataFromDht(key))
+        return (await this.node.stack.getControlLayerNode().fetchDataFromDht(key))
             .filter((entry) => !entry.deleted)
             .map((entry) => PeerDescriptor.fromBinary(entry.data!.value))
     }

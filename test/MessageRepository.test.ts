@@ -1,13 +1,12 @@
 import 'reflect-metadata'
 
+import { StreamID, utf8ToBinary } from '@streamr/utils'
 import Container from 'typedi'
 import { CONFIG_TOKEN } from '../src/Config'
+import { ContentType } from '../src/entities/Message'
+import { MessageRepository, MessageRow } from '../src/repository/MessageRepository'
 import { createDatabase } from '../src/utils'
 import { TEST_DATABASE_NAME, dropTestDatabaseIfExists } from './utils'
-import { StreamID } from '@streamr/protocol'
-import { MessageRepository, MessageRow } from '../src/repository/MessageRepository'
-import { utf8ToBinary } from '@streamr/utils'
-import { ContentType } from '../src/entities/Message'
 
 const createTestMessage = (msg: { content: Uint8Array, contentType: ContentType }): MessageRow => {
     return {
