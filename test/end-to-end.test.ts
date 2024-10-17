@@ -1,6 +1,6 @@
 import 'reflect-metadata'
 
-import { DhtAddress, NodeType, createRandomDhtAddress, getDhtAddressFromRaw, getRawFromDhtAddress } from '@streamr/dht'
+import { DhtAddress, NodeType, randomDhtAddress, toDhtAddress, toDhtAddressRaw } from '@streamr/dht'
 import StreamrClient, { CONFIG_TEST, NetworkNodeType, PeerDescriptor, StreamID, StreamPermission, StreamrClientConfig } from '@streamr/sdk'
 import { NetworkNode, createNetworkNode } from '@streamr/trackerless-network'
 import { StreamPartID, setAbortableInterval, toStreamPartID, waitForCondition } from '@streamr/utils'
@@ -24,7 +24,7 @@ const DOCKER_DEV_LOOPBACK_IP_ADDRESS = '10.200.10.1'
 
 const startEntryPoint = async (): Promise<NetworkNode> => {
     const peerDescriptor = {
-        nodeId: getRawFromDhtAddress(createRandomDhtAddress()),
+        nodeId: toDhtAddressRaw(randomDhtAddress()),
         type: NodeType.NODEJS,
         websocket: {
             host: '10.200.10.1',
@@ -34,7 +34,7 @@ const startEntryPoint = async (): Promise<NetworkNode> => {
     }
     const node = createNetworkNode({
         layer0: {
-            nodeId: getDhtAddressFromRaw(peerDescriptor.nodeId),
+            nodeId: toDhtAddress(peerDescriptor.nodeId),
             websocketHost: peerDescriptor.websocket.host,
             websocketPortRange: {
                 min: peerDescriptor.websocket.port,
@@ -56,7 +56,7 @@ const createClientConfig = (entryPointPeerDescriptor: PeerDescriptor): StreamrCl
             controlLayer: {
                 ...CONFIG_TEST.network!.controlLayer,
                 entryPoints: [{ 
-                    nodeId: getDhtAddressFromRaw(entryPointPeerDescriptor.nodeId),
+                    nodeId: toDhtAddress(entryPointPeerDescriptor.nodeId),
                     type: NetworkNodeType.NODEJS,
                     websocket: entryPointPeerDescriptor.websocket
                 }]
@@ -216,7 +216,7 @@ describe('end-to-end', () => {
         Container.reset()
     })
 
-    it('happy path', async () => {
+    it.only('happy path', async () => {
         const publishingAbortControler = new AbortController()
 
         const privateStream = await createTestStream(false)
