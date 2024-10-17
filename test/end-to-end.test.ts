@@ -216,7 +216,7 @@ describe('end-to-end', () => {
         Container.reset()
     })
 
-    it.only('happy path', async () => {
+    it('happy path', async () => {
         const publishingAbortControler = new AbortController()
 
         const privateStream = await createTestStream(false)
