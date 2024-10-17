@@ -1,6 +1,5 @@
-import { PeerDescriptor, getNodeIdFromPeerDescriptor } from '@streamr/dht'
+import { PeerDescriptor, toNodeId } from '@streamr/dht'
 import { DhtAddress, Stream, StreamCreationEvent, StreamMetadata, StreamPermission } from '@streamr/sdk'
-import { NodeInfo } from '@streamr/trackerless-network'
 import { Logger, StreamID, StreamPartID, StreamPartIDUtils, binaryToHex, toStreamPartID, wait } from '@streamr/utils'
 import { difference, range, sortBy } from 'lodash'
 import pLimit from 'p-limit'
@@ -11,7 +10,7 @@ import { MessageRepository, convertStreamMessageToMessageRow } from '../reposito
 import { NodeRepository } from '../repository/NodeRepository'
 import { StreamRepository } from '../repository/StreamRepository'
 import { collect, retry } from '../utils'
-import { NetworkNodeFacade } from './NetworkNodeFacade'
+import { NetworkNodeFacade, NormalizedNodeInfo } from './NetworkNodeFacade'
 import { MAX_SUBSCRIPTION_COUNT, SubscribeGate } from './SubscribeGate'
 import { Topology } from './Topology'
 import { getMessageRate } from './messageRate'
@@ -35,7 +34,7 @@ const RECOVERY_DELAY = 5 * 60 * 1000  // TODO from config
 
 const createPeerDescriptorLogOutput = (peerDescriptor: PeerDescriptor) => {
     return {
-        nodeId: getNodeIdFromPeerDescriptor(peerDescriptor),
+        nodeId: toNodeId(peerDescriptor),
         type: peerDescriptor.type,
         udp: peerDescriptor.udp,
         tcp: peerDescriptor.tcp,
@@ -47,17 +46,17 @@ const createPeerDescriptorLogOutput = (peerDescriptor: PeerDescriptor) => {
     }
 }
 
-const createNodeInfoLogOutput = (nodeInfo: NodeInfo) => {
+const createNodeInfoLogOutput = (nodeInfo: NormalizedNodeInfo) => {
     return {
         peerDescriptor: createPeerDescriptorLogOutput(nodeInfo.peerDescriptor),
         controlLayer: {
-            neighbors: nodeInfo.controlLayer!.neighbors.map((n: PeerDescriptor) => getNodeIdFromPeerDescriptor(n)),
-            connections: nodeInfo.controlLayer!.connections.map((n: PeerDescriptor) => getNodeIdFromPeerDescriptor(n))
+            neighbors: nodeInfo.controlLayer!.neighbors.map((n: PeerDescriptor) => toNodeId(n)),
+            connections: nodeInfo.controlLayer!.connections.map((n: PeerDescriptor) => toNodeId(n))
         },
         streamPartitions: nodeInfo.streamPartitions.map((sp: any) => ({
             id: sp.id,
-            controlLayerNeighbors: sp.controlLayerNeighbors.map((n: PeerDescriptor) => getNodeIdFromPeerDescriptor(n)),
-            contentDeliveryLayerNeighbors: sp.contentDeliveryLayerNeighbors.map((n: PeerDescriptor) => getNodeIdFromPeerDescriptor(n))
+            controlLayerNeighbors: sp.controlLayerNeighbors.map((n: PeerDescriptor) => toNodeId(n)),
+            contentDeliveryLayerNeighbors: sp.contentDeliveryLayerNeighbors.map((n: any) => toNodeId(n.peerDescriptor))  // TODO better type
         })),
         version: nodeInfo.version
     }
@@ -66,13 +65,13 @@ const createNodeInfoLogOutput = (nodeInfo: NodeInfo) => {
 export const crawlTopology = async (
     localNode: NetworkNodeFacade,
     entryPoints: PeerDescriptor[],
-    getNeighbors: (nodeInfo: NodeInfo) => PeerDescriptor[],
+    getNeighbors: (nodeInfo: NormalizedNodeInfo) => PeerDescriptor[],
     runId: string
 ): Promise<Topology> => {
-    const nodeInfos: Map<DhtAddress, NodeInfo> = new Map()
+    const nodeInfos: Map<DhtAddress, NormalizedNodeInfo> = new Map()
     const errorNodes: Set<DhtAddress> = new Set()
     const processNode = async (peerDescriptor: PeerDescriptor): Promise<void> => {
-        const nodeId = getNodeIdFromPeerDescriptor(peerDescriptor)
+        const nodeId = toNodeId(peerDescriptor)
         const processed = nodeInfos.has(nodeId) || errorNodes.has(nodeId)
         if (processed) {
             return
@@ -141,7 +140,7 @@ export class Crawler {
                 const topology = await crawlTopology(
                     networkNodeFacade,
                     this.client.getEntryPoints(),
-                    (nodeInfo: NodeInfo) => nodeInfo.controlLayer!.neighbors,
+                    (nodeInfo: NormalizedNodeInfo) => nodeInfo.controlLayer!.neighbors,
                     `full-${Date.now()}`
                 )
                 await this.nodeRepository.replaceNetworkTopology(topology)
@@ -270,11 +269,11 @@ export class Crawler {
             const entryPoints = (await Promise.all(range(payload.metadata.partitions)
                 .map((p) => toStreamPartID(payload.streamId, p))
                 .map((sp) => localNode.fetchStreamPartEntryPoints(sp)))).flat()
-            const topology = await crawlTopology(localNode, entryPoints, (nodeInfo: NodeInfo) => {
+            const topology = await crawlTopology(localNode, entryPoints, (nodeInfo: NormalizedNodeInfo) => {
                 const streamPartitions = nodeInfo.streamPartitions.filter(
                     (sp) => StreamPartIDUtils.getStreamID(sp.id as StreamPartID) === payload.streamId
                 )
-                return (streamPartitions.map((sp) => sp.contentDeliveryLayerNeighbors)).flat()
+                return (streamPartitions.map((sp) => sp.contentDeliveryLayerNeighbors.map((n) => n.peerDescriptor!))).flat()
             }, `stream-${payload.streamId}-${Date.now()}`)
             // TODO could add new nodes and neighbors to NodeRepository?
             await this.analyzeStream(payload.streamId, payload.metadata, topology, this.subscribeGate!)

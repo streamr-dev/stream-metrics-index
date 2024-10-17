@@ -1,6 +1,6 @@
 import 'reflect-metadata'
 
-import { createRandomDhtAddress, DhtAddress } from '@streamr/dht'
+import { randomDhtAddress, DhtAddress } from '@streamr/dht'
 import { Multimap, StreamID, StreamPartID, StreamPartIDUtils, utf8ToBinary } from '@streamr/utils'
 import { range, without } from 'lodash'
 import Container from 'typedi'
@@ -338,15 +338,15 @@ describe('APIServer', () => {
 
     describe('nodes', () => {
 
-        const node1 = createRandomDhtAddress()
-        const node2 = createRandomDhtAddress()
-        const node3 = createRandomDhtAddress()
+        const node1 = randomDhtAddress()
+        const node2 = randomDhtAddress()
+        const node3 = randomDhtAddress()
 
         beforeEach(async () => {
             await storeTestTopology([
                 { id: StreamPartIDUtils.parse('stream1#0'), nodeIds: [node1, node2] },
                 { id: StreamPartIDUtils.parse('stream1#1'), nodeIds: [node2, node3] },
-                { id: StreamPartIDUtils.parse('stream2#0'), nodeIds: [createRandomDhtAddress(), createRandomDhtAddress()] }
+                { id: StreamPartIDUtils.parse('stream2#0'), nodeIds: [randomDhtAddress(), randomDhtAddress()] }
             ])
         })
 
@@ -393,11 +393,11 @@ describe('APIServer', () => {
 
     describe('neighbors', () => {
 
-        const node1 = createRandomDhtAddress()
-        const node2 = createRandomDhtAddress()
-        const node3 = createRandomDhtAddress()
-        const node4 = createRandomDhtAddress()
-        const node5 = createRandomDhtAddress()
+        const node1 = randomDhtAddress()
+        const node2 = randomDhtAddress()
+        const node3 = randomDhtAddress()
+        const node4 = randomDhtAddress()
+        const node5 = randomDhtAddress()
 
         beforeEach(async () => {
             await storeTestTopology([
@@ -486,7 +486,7 @@ describe('APIServer', () => {
             publisherCount: null,
             subscriberCount: null
         })
-        await storeTestTopology([{ id: StreamPartIDUtils.parse('stream#0'), nodeIds: [createRandomDhtAddress(), createRandomDhtAddress()] }])
+        await storeTestTopology([{ id: StreamPartIDUtils.parse('stream#0'), nodeIds: [randomDhtAddress(), randomDhtAddress()] }])
         const summary = await queryAPI(`{
             summary {
                 streamCount
