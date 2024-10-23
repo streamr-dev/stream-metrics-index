@@ -1,6 +1,6 @@
 import { PeerDescriptor } from '@streamr/dht'
-import { NetworkNode, NodeInfo, StreamMessage, streamPartIdToDataKey } from '@streamr/trackerless-network'
-import { StreamPartID } from '@streamr/utils'
+import { NetworkNode, NodeInfo, StreamMessage, streamPartIdToDataKey, StreamPartitionInfo } from '@streamr/trackerless-network'
+import { ChangeFieldType, StreamPartID } from '@streamr/utils'
 import EventEmitter3 from 'eventemitter3'
 import semver from 'semver'
 import { Config } from '../Config'
@@ -10,17 +10,16 @@ export interface Events {
     unsubscribe: () => void
 }
 
-type ArrayElement<ArrayType extends readonly unknown[]> = 
-    ArrayType extends readonly (infer ElementType)[] ? ElementType : never
-
-export type NormalizedNodeInfo = Omit<NodeInfo, 'streamPartitions'> 
-    & { streamPartitions: Omit<ArrayElement<NodeInfo['streamPartitions']>, 'deprecatedContentDeliveryLayerNeighbors'>[] }
+export type NormalizedNodeInfo = ChangeFieldType<
+    NodeInfo,
+    'streamPartitions',
+    Omit<StreamPartitionInfo, 'deprecatedContentDeliveryLayerNeighbors'>[]>
 
 const toNormalizeNodeInfo = (info: NodeInfo): NormalizedNodeInfo => {
     const isLegacyFormat = semver.satisfies(semver.coerce(info.version)!, '< 102.0.0')
     return {
         ...info,
-        streamPartitions: info.streamPartitions.map((sp) => ({
+        streamPartitions: info.streamPartitions.map((sp: StreamPartitionInfo) => ({
             ...sp,
             contentDeliveryLayerNeighbors: !isLegacyFormat
                 ? sp.contentDeliveryLayerNeighbors
