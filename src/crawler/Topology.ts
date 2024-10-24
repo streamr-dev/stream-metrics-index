@@ -1,7 +1,7 @@
-import { getNodeIdFromPeerDescriptor } from '@streamr/dht'
+import { toNodeId } from '@streamr/dht'
 import { DhtAddress, StreamPartID } from '@streamr/sdk'
-import { NodeInfo } from '@streamr/trackerless-network'
 import { Multimap, numberToIpv4, StreamPartIDUtils } from '@streamr/utils'
+import { NormalizedNodeInfo } from './NetworkNodeFacade'
 
 export interface Node {
     id: DhtAddress
@@ -13,17 +13,17 @@ export class Topology {
 
     private nodes: Map<DhtAddress, Node> = new Map()
 
-    constructor(infos: NodeInfo[]) {
-        const nodeIds = new Set(...[infos.map((info) => getNodeIdFromPeerDescriptor(info.peerDescriptor))])
+    constructor(infos: NormalizedNodeInfo[]) {
+        const nodeIds = new Set(...[infos.map((info) => toNodeId(info.peerDescriptor))])
         for (const info of infos) {
             const streamPartNeighbors: Multimap<StreamPartID, DhtAddress> = new Multimap()
             for (const streamPartitionInfo of info.streamPartitions) {
                 const neighbors = streamPartitionInfo.contentDeliveryLayerNeighbors
-                    .map((n) => getNodeIdFromPeerDescriptor(n))
+                    .map((n) => toNodeId(n.peerDescriptor!))
                     .filter((id) => nodeIds.has(id))
                 streamPartNeighbors.addAll(StreamPartIDUtils.parse(streamPartitionInfo.id), neighbors)
             }
-            const nodeId = getNodeIdFromPeerDescriptor(info.peerDescriptor)
+            const nodeId = toNodeId(info.peerDescriptor)
             this.nodes.set(nodeId, {
                 id: nodeId,
                 streamPartNeighbors,

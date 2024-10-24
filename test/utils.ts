@@ -4,13 +4,13 @@ import { Server } from 'http'
 import { omit } from 'lodash'
 import { Config } from '../src/Config'
 import { createDatabaseConnection } from '../src/utils'
-import { DhtAddress, NodeType, PeerDescriptor, createRandomDhtAddress, getRawFromDhtAddress } from '@streamr/dht'
+import { DhtAddress, NodeType, PeerDescriptor, randomDhtAddress, toDhtAddressRaw } from '@streamr/dht'
 
 export const TEST_DATABASE_NAME = 'stream_metrics_index_test'
 
 export const createTestPeerDescriptor = (nodeId?: DhtAddress): PeerDescriptor => {
     return {
-        nodeId: getRawFromDhtAddress(nodeId ?? createRandomDhtAddress()),
+        nodeId: toDhtAddressRaw(nodeId ?? randomDhtAddress()),
         type: NodeType.NODEJS
     }
 }
