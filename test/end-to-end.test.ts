@@ -3,7 +3,7 @@ import 'reflect-metadata'
 import { DhtAddress, NodeType, createRandomDhtAddress, getDhtAddressFromRaw, getRawFromDhtAddress } from '@streamr/dht'
 import StreamrClient, { CONFIG_TEST, NetworkNodeType, PeerDescriptor, StreamID, StreamPermission, StreamrClientConfig } from '@streamr/sdk'
 import { NetworkNode, createNetworkNode } from '@streamr/trackerless-network'
-import { StreamPartID, setAbortableInterval, toStreamPartID, waitForCondition } from '@streamr/utils'
+import { StreamPartID, collect, setAbortableInterval, toStreamPartID, waitForCondition } from '@streamr/utils'
 import { sample, uniq, without } from 'lodash'
 import Container from 'typedi'
 import { CONFIG_TOKEN } from '../src/Config'
@@ -65,11 +65,9 @@ const createClientConfig = (entryPointPeerDescriptor: PeerDescriptor): StreamrCl
     }
 }
 
-const createClient = (privateKey: string, entryPointPeerDescriptor: PeerDescriptor) => {
+const createClient = (privateKey: string | undefined, entryPointPeerDescriptor: PeerDescriptor) => {
     return new StreamrClient({
-        auth: {
-            privateKey
-        },
+        auth: (privateKey !== undefined) ? { privateKey } : undefined,
         ...createClientConfig(entryPointPeerDescriptor)
     })
 }
@@ -179,6 +177,16 @@ describe('end-to-end', () => {
         }))
     }
 
+    const waitForTheGraphToIndex = async (streamIds: StreamID[]): Promise<void> => {
+        const client = createClient(undefined, entryPoint.getPeerDescriptor())
+        for (const streamId of streamIds) {
+            await waitForCondition(async () => {
+                const streams = await collect(client.searchStreams(streamId, undefined))
+                return streams.length > 0
+            }, 5000, 500)
+        }
+    }
+
     beforeAll(async () => {
         entryPoint = await startEntryPoint()
         const config = {
@@ -223,6 +231,7 @@ describe('end-to-end', () => {
         await startPublisherAndSubscriberForStream(privateStream.id, publishingAbortControler.signal)
         const publicStream = await createTestStream(true)
         await startPublisherAndSubscriberForStream(publicStream.id, publishingAbortControler.signal)
+        await waitForTheGraphToIndex([privateStream.id, publicStream.id])
 
         crawler = Container.get(Crawler)
         await crawler.start(1)
