@@ -53,13 +53,10 @@ const createNodeInfoLogOutput = (nodeInfo: NormalizedNodeInfo) => {
             neighbors: nodeInfo.controlLayer!.neighbors.map(toNodeId),
             connections: nodeInfo.controlLayer!.connections.map(toNodeId)
         },
-        streamPartitions: nodeInfo.streamPartitions.map((sp) => ({
+        streamPartitions: nodeInfo.streamPartitions.map((sp: any) => ({
             id: sp.id,
             controlLayerNeighbors: sp.controlLayerNeighbors.map(toNodeId),
-            contentDeliveryLayerNeighbors: sp.contentDeliveryLayerNeighbors.map((n) => ({
-                nodeId: toNodeId(n.peerDescriptor),
-                rtt: n.rtt
-            }))
+            contentDeliveryLayerNeighbors: sp.contentDeliveryLayerNeighbors.map((n: any) => toNodeId(n.peerDescriptor))  // TODO better type
         })),
         version: nodeInfo.version
     }

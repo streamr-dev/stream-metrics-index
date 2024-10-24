@@ -1,7 +1,7 @@
 import 'reflect-metadata'
 
 import { DhtAddress, NodeType, randomDhtAddress, toDhtAddress, toDhtAddressRaw } from '@streamr/dht'
-import StreamrClient, { NetworkNodeType, PeerDescriptor, StreamID, StreamPermission, StreamrClientConfig } from '@streamr/sdk'
+import StreamrClient, { CONFIG_TEST, NetworkNodeType, PeerDescriptor, StreamID, StreamPermission, StreamrClientConfig } from '@streamr/sdk'
 import { NetworkNode, createNetworkNode } from '@streamr/trackerless-network'
 import { StreamPartID, collect, setAbortableInterval, toStreamPartID, waitForCondition } from '@streamr/utils'
 import { sample, uniq, without } from 'lodash'
@@ -50,9 +50,11 @@ const startEntryPoint = async (): Promise<NetworkNode> => {
 
 const createClientConfig = (entryPointPeerDescriptor: PeerDescriptor): StreamrClientConfig => {
     return {
-        environment:'dev2',
+        ...CONFIG_TEST,
         network: {
+            ...CONFIG_TEST.network,
             controlLayer: {
+                ...CONFIG_TEST.network!.controlLayer,
                 entryPoints: [{ 
                     nodeId: toDhtAddress(entryPointPeerDescriptor.nodeId),
                     type: NetworkNodeType.NODEJS,
