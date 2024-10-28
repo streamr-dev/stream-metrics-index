@@ -87,7 +87,7 @@ const queryStreamMetrics = async (id: string, apiPort: number): Promise<Stream |
         }
     }`
     const response = await queryAPI(query, apiPort)
-    const streams = response['items']
+    const streams = response.items
     if (streams.length > 0) {
         return streams[0]
     } else {
@@ -116,7 +116,7 @@ const queryNodes = async (apiPort: number): Promise<Node[]> => {
         }
     }`
     const response = await queryAPI(query, apiPort)
-    return response['items']
+    return response.items
 }
 
 const queryNeighbors = async (nodeId: DhtAddress, streamPartId: StreamPartID, apiPort: number): Promise<DhtAddress[]> => {
@@ -129,7 +129,7 @@ const queryNeighbors = async (nodeId: DhtAddress, streamPartId: StreamPartID, ap
         }
     }`
     const response = await queryAPI(query, apiPort)
-    const items = response['items']
+    const items = response.items
     return without([items[0].nodeId1, items[0].nodeId2], nodeId)
 }
 
@@ -261,7 +261,7 @@ describe('end-to-end', () => {
         expect(sampleMessage2.content).toEqual('{"foo":"bar"}')
         expect(sampleMessage2.contentType).toEqual('JSON')
 
-        const nodes = (await queryNodes(apiPort))!
+        const nodes = (await queryNodes(apiPort))
         expect(nodes.map((n) => n.id)).toIncludeSameMembers([
             await publisher.getNodeId(),
             await subscriber.getNodeId(),
@@ -271,7 +271,7 @@ describe('end-to-end', () => {
         expect(uniq(nodes.map((n) => n.ipAddress))).toEqual([DOCKER_DEV_LOOPBACK_IP_ADDRESS])
 
         const randomActiveStreamPartId = toStreamPartID(privateStream.id, sample(ACTIVE_PARTITIONS)!)
-        const neighbors = (await queryNeighbors(await publisher.getNodeId(), randomActiveStreamPartId, apiPort))!
+        const neighbors = (await queryNeighbors(await publisher.getNodeId(), randomActiveStreamPartId, apiPort))
         expect(neighbors).toEqual([await subscriber.getNodeId()])
 
         const newStream = await createTestStream(false)

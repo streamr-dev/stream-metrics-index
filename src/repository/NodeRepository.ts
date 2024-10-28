@@ -108,7 +108,7 @@ export class NodeRepository {
         const neighbors: [StreamPartID, DhtAddress, DhtAddress][] = []
         for (const node of topology.getNodes()) {
             for (const streamPartId of node.streamPartNeighbors.keys()) {
-                const streamPartNeighbors = node.streamPartNeighbors.get(streamPartId)!
+                const streamPartNeighbors = node.streamPartNeighbors.get(streamPartId)
                 for (const neighbor of streamPartNeighbors) {
                     // If node A and B are neighbors, we assume that there are two associations in the topology:
                     // A->B and B-A. We don't need to store both associations to the DB. The following comparison

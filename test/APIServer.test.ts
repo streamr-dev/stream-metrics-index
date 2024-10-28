@@ -365,7 +365,7 @@ describe('APIServer', () => {
                     }
                 }
             }`, apiPort)
-            const node = response['items'][0]
+            const node = response.items[0]
             expect(node).toEqual({
                 id: node1,
                 ipAddress: '123.1.2.3',
@@ -417,7 +417,7 @@ describe('APIServer', () => {
                     }
                 }
             }`, apiPort)
-            const neighbors = response['items']
+            const neighbors = response.items
             const actualNodes = neighbors.map((n: any) => [n.nodeId1, n.nodeId2]).flat()
             expect(actualNodes).toIncludeSameMembers([node1, node2, node2, node3, node4, node5])
         })
@@ -432,7 +432,7 @@ describe('APIServer', () => {
                     }
                 }
             }`, apiPort)
-            const neighbors = response1['items']
+            const neighbors = response1.items
             const actualNodes = neighbors.map((n: any) => [n.nodeId1, n.nodeId2]).flat()
             expect(actualNodes).toIncludeSameMembers([node1, node2])
         })
@@ -446,7 +446,7 @@ describe('APIServer', () => {
                     }
                 }
             }`, apiPort)
-            const neighbors = response['items']
+            const neighbors = response.items
             const actualNodes = neighbors.map((n: any) => [n.nodeId1, n.nodeId2]).flat()
             expect(actualNodes).toIncludeSameMembers([node1, node2])
         })
@@ -460,7 +460,7 @@ describe('APIServer', () => {
                     }
                 }
             }`, apiPort)
-            const neighbors = response['items']
+            const neighbors = response.items
             const actualNodes = neighbors.map((n: any) => [n.nodeId1, n.nodeId2]).flat()
             expect(actualNodes).toIncludeSameMembers([node1, node2, node2, node3])
         })
