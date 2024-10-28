@@ -77,7 +77,7 @@ export const queryAPI = async (query: string, port: number): Promise<any> => {
         }
     })
     const body = await response.json()
-    const root = body['data']
+    const root = body.data
     if (root !== undefined) {
         const rootKeys = Object.keys(root)
         return root[rootKeys[0]]

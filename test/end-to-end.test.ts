@@ -87,7 +87,7 @@ const queryStreamMetrics = async (id: string, apiPort: number): Promise<Stream |
         }
     }`
     const response = await queryAPI(query, apiPort)
-    const streams = response['items']
+    const streams = response.items
     if (streams.length > 0) {
         return streams[0]
     } else {
@@ -116,7 +116,7 @@ const queryNodes = async (apiPort: number): Promise<Node[]> => {
         }
     }`
     const response = await queryAPI(query, apiPort)
-    return response['items']
+    return response.items
 }
 
 const queryNeighbors = async (nodeId: DhtAddress, streamPartId: StreamPartID, apiPort: number): Promise<DhtAddress[]> => {
@@ -129,7 +129,7 @@ const queryNeighbors = async (nodeId: DhtAddress, streamPartId: StreamPartID, ap
         }
     }`
     const response = await queryAPI(query, apiPort)
-    const items = response['items']
+    const items = response.items
     return without([items[0].nodeId1, items[0].nodeId2], nodeId)
 }
 
