@@ -1,4 +1,4 @@
-import { DhtAddress, NodeType, getRawFromDhtAddress } from '@streamr/dht'
+import { DhtAddress, NodeType, toDhtAddressRaw } from '@streamr/dht'
 import {
     NetworkNodeType,
     NetworkPeerDescriptor,
@@ -20,7 +20,7 @@ export const peerDescriptorTranslator = (json: NetworkPeerDescriptor): PeerDescr
     const type = json.type === NetworkNodeType.BROWSER ? NodeType.BROWSER : NodeType.NODEJS
     return {
         ...json,
-        nodeId: getRawFromDhtAddress(json.nodeId as DhtAddress),
+        nodeId: toDhtAddressRaw(json.nodeId as DhtAddress),
         type
     }
 }

@@ -1,8 +1,8 @@
-import { DhtAddress, PeerDescriptor, getNodeIdFromPeerDescriptor } from '@streamr/dht'
-import { NodeInfo } from '@streamr/trackerless-network'
+import { DhtAddress, PeerDescriptor, toNodeId } from '@streamr/dht'
 import { StreamPartIDUtils } from '@streamr/utils'
 import { crawlTopology } from '../src/crawler/Crawler'
 import { createTestPeerDescriptor } from './utils'
+import { NormalizedNodeInfo } from '../src/crawler/NetworkNodeFacade'
 
 const STREAM_PART_ID = StreamPartIDUtils.parse('stream#0')
 
@@ -11,19 +11,21 @@ describe('Crawler', () => {
     let nodes: PeerDescriptor[]
     let neighbors: Map<DhtAddress, PeerDescriptor[]>
 
-    const createMockNodeInfo = (peerDescriptor: PeerDescriptor): NodeInfo => {
+    const createMockNodeInfo = (peerDescriptor: PeerDescriptor): NormalizedNodeInfo => {
         return {
             peerDescriptor,
             controlLayer: {
                 neighbors: [],
                 connections: []
             },
-            streamPartitions: [{ 
+            streamPartitions: [{
                 id: STREAM_PART_ID,
                 controlLayerNeighbors: [],
-                contentDeliveryLayerNeighbors: neighbors.get(getNodeIdFromPeerDescriptor(peerDescriptor)) ?? []
+                contentDeliveryLayerNeighbors: neighbors.get(toNodeId(peerDescriptor))!.map((n) => ({
+                    peerDescriptor: n
+                })) ?? []
             }],
-            version: ''
+            version: '102.0.0'
         }
     }
 
@@ -38,13 +40,13 @@ describe('Crawler', () => {
             createTestPeerDescriptor()
         ]
         neighbors = new Map()
-        neighbors.set(getNodeIdFromPeerDescriptor(nodes[0]), [nodes[1], nodes[2]])
-        neighbors.set(getNodeIdFromPeerDescriptor(nodes[1]), [nodes[4]])
-        neighbors.set(getNodeIdFromPeerDescriptor(nodes[2]), [nodes[3]])
-        neighbors.set(getNodeIdFromPeerDescriptor(nodes[3]), [])
-        neighbors.set(getNodeIdFromPeerDescriptor(nodes[4]), [nodes[1], nodes[2], nodes[5]])
-        neighbors.set(getNodeIdFromPeerDescriptor(nodes[5]), [nodes[6]])
-        neighbors.set(getNodeIdFromPeerDescriptor(nodes[6]), [])
+        neighbors.set(toNodeId(nodes[0]), [nodes[1], nodes[2]])
+        neighbors.set(toNodeId(nodes[1]), [nodes[4]])
+        neighbors.set(toNodeId(nodes[2]), [nodes[3]])
+        neighbors.set(toNodeId(nodes[3]), [])
+        neighbors.set(toNodeId(nodes[4]), [nodes[1], nodes[2], nodes[5]])
+        neighbors.set(toNodeId(nodes[5]), [nodes[6]])
+        neighbors.set(toNodeId(nodes[6]), [])
     })
 
     it('crawlTopology', async () => {
@@ -58,10 +60,10 @@ describe('Crawler', () => {
         const topology = await crawlTopology(
             localNode as any,
             [nodes[0], nodes[5]],
-            (response: NodeInfo) => response.streamPartitions[0].contentDeliveryLayerNeighbors,
+            (response: NormalizedNodeInfo) => response.streamPartitions[0].contentDeliveryLayerNeighbors.map((n) => n.peerDescriptor!),
             ''
         )
         expect(localNode.fetchNodeInfo).toHaveBeenCalledTimes(nodes.length)
-        expect([...topology.getPeers(STREAM_PART_ID)!]).toIncludeSameMembers(nodes.map((n) => getNodeIdFromPeerDescriptor(n)))
+        expect([...topology.getPeers(STREAM_PART_ID)!]).toIncludeSameMembers(nodes.map(toNodeId))
     })
 })
