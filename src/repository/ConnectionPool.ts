@@ -25,7 +25,6 @@ export class ConnectionPool {
         })
     }
 
-    // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
     async queryOrExecute<T>(sql: string, params?: any[]): Promise<T[]> {
         const connection = await this.delegatee.getConnection()
         try {

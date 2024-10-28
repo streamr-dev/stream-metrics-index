@@ -134,7 +134,6 @@ export class Crawler {
         this.onStreamCreated = (payload) => this.createNewStreamListener(payload, networkNodeFacade)
         this.client.on('streamCreated', this.onStreamCreated)
         let iterationIndex = 0
-        // eslint-disable-next-line no-constant-condition
         while (true) {
             try {
                 const topology = await crawlTopology(
