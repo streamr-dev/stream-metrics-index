@@ -20,9 +20,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3.2.0
       - run: npm ci
-      - run: npm run eslint
       - run: npm run build
       - run: npm run check
+      - run: npm run eslint
       - uses: streamr-dev/streamr-docker-dev-action@v1.0.1
         with:
           services-to-start: mysql dev-chain-fast deploy-network-subgraphs-fastchain
