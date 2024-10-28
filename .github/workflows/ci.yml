@@ -22,6 +22,7 @@ jobs:
       - run: npm ci
       - run: npm run eslint
       - run: npm run build
+      - run: npm run check
       - uses: streamr-dev/streamr-docker-dev-action@v1.0.1
         with:
           services-to-start: mysql dev-chain-fast deploy-network-subgraphs-fastchain
