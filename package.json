@@ -7,7 +7,8 @@
     "docker:build": "docker build --tag streamr/stream-metrics-index:latest .",
     "docker:push": "docker buildx build --platform linux/amd64,linux/arm64 --tag streamr/stream-metrics-index:latest --push .",
     "test": "jest --runInBand",
-    "eslint": "eslint --cache --cache-location=node_modules/.cache/.eslintcache/ '*/**/*.{js,ts}'"
+    "eslint": "eslint --cache --cache-location=node_modules/.cache/.eslintcache/ '*/**/*.{js,ts}'",
+    "check": "tsc -p ./tsconfig.jest.json"
   },
   "author": "Streamr Network AG <contact@streamr.network>",
   "dependencies": {
