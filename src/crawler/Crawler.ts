@@ -50,8 +50,8 @@ const createNodeInfoLogOutput = (nodeInfo: NormalizedNodeInfo) => {
     return {
         peerDescriptor: createPeerDescriptorLogOutput(nodeInfo.peerDescriptor),
         controlLayer: {
-            neighbors: nodeInfo.controlLayer!.neighbors.map(toNodeId),
-            connections: nodeInfo.controlLayer!.connections.map(toNodeId)
+            neighbors: nodeInfo.controlLayer.neighbors.map(toNodeId),
+            connections: nodeInfo.controlLayer.connections.map(toNodeId)
         },
         streamPartitions: nodeInfo.streamPartitions.map((sp: any) => ({
             id: sp.id,
@@ -139,7 +139,7 @@ export class Crawler {
                 const topology = await crawlTopology(
                     networkNodeFacade,
                     this.client.getEntryPoints(),
-                    (nodeInfo: NormalizedNodeInfo) => nodeInfo.controlLayer!.neighbors,
+                    (nodeInfo: NormalizedNodeInfo) => nodeInfo.controlLayer.neighbors,
                     `full-${Date.now()}`
                 )
                 await this.nodeRepository.replaceNetworkTopology(topology)

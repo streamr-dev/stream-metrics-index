@@ -261,7 +261,7 @@ describe('end-to-end', () => {
         expect(sampleMessage2.content).toEqual('{"foo":"bar"}')
         expect(sampleMessage2.contentType).toEqual('JSON')
 
-        const nodes = (await queryNodes(apiPort))!
+        const nodes = (await queryNodes(apiPort))
         expect(nodes.map((n) => n.id)).toIncludeSameMembers([
             await publisher.getNodeId(),
             await subscriber.getNodeId(),
@@ -271,7 +271,7 @@ describe('end-to-end', () => {
         expect(uniq(nodes.map((n) => n.ipAddress))).toEqual([DOCKER_DEV_LOOPBACK_IP_ADDRESS])
 
         const randomActiveStreamPartId = toStreamPartID(privateStream.id, sample(ACTIVE_PARTITIONS)!)
-        const neighbors = (await queryNeighbors(await publisher.getNodeId(), randomActiveStreamPartId, apiPort))!
+        const neighbors = (await queryNeighbors(await publisher.getNodeId(), randomActiveStreamPartId, apiPort))
         expect(neighbors).toEqual([await subscriber.getNodeId()])
 
         const newStream = await createTestStream(false)

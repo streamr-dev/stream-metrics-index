@@ -43,7 +43,7 @@ export class NodeResolver {
         @Arg("cursor", { nullable: true }) cursor?: string
     ): Promise<Neighbors> {
         return this.repository.getNeighbors(
-            (nodeId !== undefined) ? nodeId as DhtAddress : undefined,
+            (nodeId !== undefined) ? nodeId : undefined,
             (streamPart !== undefined) ? StreamPartIDUtils.parse(streamPart) : undefined,
             (streamId !== undefined) ? toStreamID(streamId) : undefined,
             pageSize,
