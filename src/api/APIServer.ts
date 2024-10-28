@@ -52,7 +52,7 @@ export class APIServer {
     }
 
     async destroy(): Promise<void> {
-        if (this.httpServer !== undefined && this.httpServer.listening) {
+        if (this.httpServer?.listening) {
             this.httpServer.close()
             await once(this.httpServer, 'close')
         }
