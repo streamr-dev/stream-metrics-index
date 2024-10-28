@@ -57,6 +57,15 @@ export default [
                 multiline: { delimiter: 'none' }
             }],
             '@stylistic/object-curly-spacing': ['error', 'always'],
+            '@typescript-eslint/restrict-template-expressions': ['error', { 
+                allowAny: false,
+                allowBoolean: true,
+                allowNullish: true,
+                allowNumber: true,
+                allowRegExp: true,
+                allowNever: true,
+                allow: [{ from: 'lib', name: ['Error'] }]
+            }],
             '@stylistic/space-before-blocks': 'error',
             '@stylistic/space-before-function-paren': ['error', {
                 anonymous: 'never',
@@ -74,8 +83,7 @@ export default [
             '@typescript-eslint/no-unsafe-call': 'off',
             '@typescript-eslint/no-unsafe-member-access': 'off',
             '@typescript-eslint/no-unsafe-return': 'off',
-            '@typescript-eslint/require-await': 'off',
-            '@typescript-eslint/restrict-template-expressions': 'off'
+            '@typescript-eslint/require-await': 'off'
         }
     }
 ]

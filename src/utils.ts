@@ -7,6 +7,12 @@ import { Config } from './Config'
 
 const logger = new Logger(module)
 
+interface APIErrorResponse {
+    errors: [{
+        message: string
+    }]
+}
+
 export const collect = async <T>(source: AsyncIterable<T>, maxCount?: number): Promise<T[]> => {
     const items: T[] = []
     for await (const item of source) {
@@ -82,7 +88,7 @@ export const queryAPI = async (query: string, port: number): Promise<any> => {
         const rootKeys = Object.keys(root)
         return root[rootKeys[0]]
     } else {
-        throw new Error(`Query error: ${body.errors.map((e: any) => e.message)}`)
+        throw new Error(`Query error: ${(body as APIErrorResponse).errors.map((e: any) => e.message).join()}`)
     }
 }
 
