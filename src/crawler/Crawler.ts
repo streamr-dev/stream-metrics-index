@@ -1,5 +1,5 @@
 import { PeerDescriptor, toNodeId } from '@streamr/dht'
-import { DhtAddress, Stream, StreamCreationEvent, StreamMetadata, StreamPermission } from '@streamr/sdk'
+import { DhtAddress, getStreamPartitionCount, Stream, StreamCreationEvent, StreamMetadata, StreamPermission } from '@streamr/sdk'
 import { Logger, StreamID, StreamPartID, StreamPartIDUtils, binaryToHex, toStreamPartID, wait } from '@streamr/utils'
 import { difference, range, sortBy } from 'lodash'
 import pLimit from 'p-limit'
@@ -176,7 +176,7 @@ export class Crawler {
         const workedThreadLimit = pLimit(MAX_SUBSCRIPTION_COUNT)
         await Promise.all(sortedContractStreams.map((stream: Stream) => {
             return workedThreadLimit(async () => {
-                await this.analyzeStream(stream.id, stream.getMetadata(), topology, subscribeGate)
+                await this.analyzeStream(stream.id, await stream.getMetadata(), topology, subscribeGate)
             })
         }))
 
@@ -191,7 +191,7 @@ export class Crawler {
     ): Promise<void> {
         logger.info(`Analyze ${id}`)
         const peersByPartition = new Map<number, Set<DhtAddress>>
-        for (const partition of range(metadata.partitions)) {
+        for (const partition of range(getStreamPartitionCount(metadata))) {
             peersByPartition.set(partition, topology.getPeers(toStreamPartID(id, partition)))
         }
         try {
@@ -212,7 +212,7 @@ export class Crawler {
             logger.info(`Replace ${id}`)
             await this.streamRepository.replaceStream({
                 id,
-                description: metadata.description ?? null,
+                description: metadata.description as string ?? null,
                 peerCount: peerIds.size,
                 messagesPerSecond: messageRate.messagesPerSecond,
                 bytesPerSecond: messageRate.bytesPerSecond,
@@ -253,7 +253,7 @@ export class Crawler {
             //   is the only publisher and subscriber
             await this.streamRepository.replaceStream({
                 id: payload.streamId,
-                description: payload.metadata.description ?? null,
+                description: payload.metadata.description as string ?? null,
                 peerCount: 0,
                 messagesPerSecond: 0,
                 bytesPerSecond: 0,
@@ -265,7 +265,7 @@ export class Crawler {
             await wait(this.config.crawler.newStreamAnalysisDelay)
             // the entryPoints may contain duplicates (i.e. same node is an entry point for
             // multiple partitions), but crawlTopology can ignore those
-            const entryPoints = (await Promise.all(range(payload.metadata.partitions)
+            const entryPoints = (await Promise.all(range(getStreamPartitionCount(payload.metadata))
                 .map((p) => toStreamPartID(payload.streamId, p))
                 .map((sp) => localNode.fetchStreamPartEntryPoints(sp)))).flat()
             const topology = await crawlTopology(localNode, entryPoints, (nodeInfo: NormalizedNodeInfo) => {
