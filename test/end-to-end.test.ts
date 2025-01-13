@@ -156,7 +156,7 @@ describe('end-to-end', () => {
         if (isPublic) {
             await stream.grantPermissions({ public: true, permissions })
         }  else {
-            await stream.grantPermissions({ user: await subscriber.getAddress(), permissions })
+            await stream.grantPermissions({ userId: await subscriber.getAddress(), permissions })
         }
         return stream
     }

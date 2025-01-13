@@ -44,7 +44,7 @@ export class StreamrClientFacade {
 
     searchStreams(owner: string): AsyncIterable<Stream> {
         return this.client.searchStreams(undefined, {
-            user: owner,
+            userId: owner,
             allowPublic: false,
             allOf: [StreamPermission.GRANT]
         })
