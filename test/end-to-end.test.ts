@@ -3,7 +3,7 @@ import 'reflect-metadata'
 import { DhtAddress, NodeType, randomDhtAddress, toDhtAddress, toDhtAddressRaw } from '@streamr/dht'
 import StreamrClient, { NetworkNodeType, PeerDescriptor, StreamID, StreamPermission, StreamrClientConfig } from '@streamr/sdk'
 import { NetworkNode, createNetworkNode } from '@streamr/trackerless-network'
-import { StreamPartID, collect, setAbortableInterval, toStreamPartID, waitForCondition } from '@streamr/utils'
+import { StreamPartID, collect, setAbortableInterval, toStreamPartID, until } from '@streamr/utils'
 import { sample, uniq, without } from 'lodash'
 import Container from 'typedi'
 import { CONFIG_TOKEN } from '../src/Config'
@@ -178,7 +178,7 @@ describe('end-to-end', () => {
     const waitForTheGraphToIndex = async (streamIds: StreamID[]): Promise<void> => {
         const client = createClient(undefined, entryPoint.getPeerDescriptor())
         for (const streamId of streamIds) {
-            await waitForCondition(async () => {
+            await until(async () => {
                 const streams = await collect(client.searchStreams(streamId, undefined))
                 return streams.length > 0
             }, 5000, 500)
@@ -275,7 +275,7 @@ describe('end-to-end', () => {
         const newStream = await createTestStream(false)
         await startPublisherAndSubscriberForStream(newStream.id, publishingAbortControler.signal)
 
-        await waitForCondition(async () => {
+        await until(async () => {
             const metrics = await queryStreamMetrics(newStream.id, apiPort)
             return (metrics !== undefined) && (metrics.peerCount >= 2)
         }, 20 * 1000, 1000)
