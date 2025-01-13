@@ -58,7 +58,7 @@ const createNodeInfoLogOutput = (nodeInfo: NormalizedNodeInfo) => {
             controlLayerNeighbors: sp.controlLayerNeighbors.map(toNodeId),
             contentDeliveryLayerNeighbors: sp.contentDeliveryLayerNeighbors.map((n: any) => toNodeId(n.peerDescriptor))  // TODO better type
         })),
-        version: nodeInfo.version
+        applicationVersion: nodeInfo.applicationVersion
     }
 }
 

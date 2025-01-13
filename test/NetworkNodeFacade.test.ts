@@ -29,7 +29,7 @@ const NORMAL_INFO = {
             rtt: 123
         }]
     }],
-    version: '102.0.0-beta.0'
+    applicationVersion: '102.0.0-beta.1'
 }
 const LEGACY_INFO = {
     peerDescriptor: createTestPeerDescriptor(),
@@ -43,7 +43,7 @@ const LEGACY_INFO = {
         deprecatedContentDeliveryLayerNeighbors: [createTestPeerDescriptor()],
         contentDeliveryLayerNeighbors: []
     }],
-    version: '101.1.1-beta.1'
+    applicationVersion: '101.1.1-beta.1'
 }
 
 const createMockNode = (rawNodeInfo: NodeInfo): Partial<NetworkNode>  => {

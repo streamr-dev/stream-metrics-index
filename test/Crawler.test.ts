@@ -25,7 +25,7 @@ describe('Crawler', () => {
                     peerDescriptor: n
                 })) ?? []
             }],
-            version: '102.0.0'
+            applicationVersion: '102.0.0'
         }
     }
 
