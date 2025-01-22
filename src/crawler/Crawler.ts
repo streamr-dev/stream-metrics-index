@@ -272,7 +272,7 @@ export class Crawler {
                 const streamPartitions = nodeInfo.streamPartitions.filter(
                     (sp) => StreamPartIDUtils.getStreamID(sp.id as StreamPartID) === payload.streamId
                 )
-                return (streamPartitions.map((sp) => sp.contentDeliveryLayerNeighbors.map((n) => n.peerDescriptor!))).flat()
+                return (streamPartitions.map((sp) => sp.contentDeliveryLayerNeighbors.map((n) => n.peerDescriptor))).flat()
             }, `stream-${payload.streamId}-${Date.now()}`)
             // TODO could add new nodes and neighbors to NodeRepository?
             await this.analyzeStream(payload.streamId, payload.metadata, topology, this.subscribeGate!)

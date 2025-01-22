@@ -19,7 +19,7 @@ export class Topology {
             const streamPartNeighbors: Multimap<StreamPartID, DhtAddress> = new Multimap()
             for (const streamPartitionInfo of info.streamPartitions) {
                 const neighbors = streamPartitionInfo.contentDeliveryLayerNeighbors
-                    .map((n) => toNodeId(n.peerDescriptor!))
+                    .map((n) => toNodeId(n.peerDescriptor))
                     .filter((id) => nodeIds.has(id))
                 streamPartNeighbors.addAll(StreamPartIDUtils.parse(streamPartitionInfo.id), neighbors)
             }
