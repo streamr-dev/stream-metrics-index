@@ -29,7 +29,7 @@ const NORMAL_INFO = {
             rtt: 123
         }]
     }],
-    applicationVersion: '102.0.0-beta.1'
+    applicationVersion: '102.0.0-beta.2'
 }
 const LEGACY_INFO = {
     peerDescriptor: createTestPeerDescriptor(),
