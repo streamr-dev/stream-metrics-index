@@ -1,4 +1,4 @@
-FROM node:18-bullseye as build
+FROM node:22-bullseye as build
 WORKDIR /usr/src/app
 COPY . /usr/src/app
 RUN npm ci
@@ -6,7 +6,7 @@ RUN npm run build
 RUN chmod +x dist/bin/*.js
 RUN rm -rf node_modules
 
-FROM node:18-bullseye
+FROM node:22-bullseye
 USER node
 WORKDIR /usr/src/app
 COPY --chown=node:node --from=build /usr/src/app/ .
