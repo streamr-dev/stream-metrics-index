@@ -1,9 +1,10 @@
 import 'reflect-metadata'
 
 import { DhtAddress, NodeType, randomDhtAddress, toDhtAddress, toDhtAddressRaw } from '@streamr/dht'
-import StreamrClient, { CONFIG_TEST, NetworkNodeType, PeerDescriptor, StreamID, StreamPermission, StreamrClientConfig } from '@streamr/sdk'
+import StreamrClient, { NetworkNodeType, PeerDescriptor, StreamID, StreamPermission, StreamrClientConfig } from '@streamr/sdk'
 import { NetworkNode, createNetworkNode } from '@streamr/trackerless-network'
-import { StreamPartID, collect, setAbortableInterval, toStreamPartID, waitForCondition } from '@streamr/utils'
+import { StreamPartID, collect, setAbortableInterval, toStreamPartID, until } from '@streamr/utils'
+import { fetchPrivateKeyWithGas } from '@streamr/test-utils'
 import { sample, uniq, without } from 'lodash'
 import Container from 'typedi'
 import { CONFIG_TOKEN } from '../src/Config'
@@ -15,8 +16,6 @@ import { Stream } from '../src/entities/Stream'
 import { createDatabase, queryAPI } from '../src/utils'
 import { TEST_DATABASE_NAME, dropTestDatabaseIfExists } from './utils'
 
-const PUBLISHER_PRIVATE_KEY = '0x0000000000000000000000000000000000000000000000000000000000000001'
-const SUBSCRIBER_PRIVATE_KEY = '0x0000000000000000000000000000000000000000000000000000000000000002'
 const ENTRY_POINT_PORT = 40501
 const PARTITION_COUNT = 3
 const ACTIVE_PARTITIONS = [1, 2]
@@ -50,11 +49,9 @@ const startEntryPoint = async (): Promise<NetworkNode> => {
 
 const createClientConfig = (entryPointPeerDescriptor: PeerDescriptor): StreamrClientConfig => {
     return {
-        ...CONFIG_TEST,
+        environment: 'dev2',
         network: {
-            ...CONFIG_TEST.network,
             controlLayer: {
-                ...CONFIG_TEST.network!.controlLayer,
                 entryPoints: [{ 
                     nodeId: toDhtAddress(entryPointPeerDescriptor.nodeId),
                     type: NetworkNodeType.NODEJS,
@@ -156,7 +153,7 @@ describe('end-to-end', () => {
         if (isPublic) {
             await stream.grantPermissions({ public: true, permissions })
         }  else {
-            await stream.grantPermissions({ user: await subscriber.getAddress(), permissions })
+            await stream.grantPermissions({ userId: await subscriber.getAddress(), permissions })
         }
         return stream
     }
@@ -180,7 +177,7 @@ describe('end-to-end', () => {
     const waitForTheGraphToIndex = async (streamIds: StreamID[]): Promise<void> => {
         const client = createClient(undefined, entryPoint.getPeerDescriptor())
         for (const streamId of streamIds) {
-            await waitForCondition(async () => {
+            await until(async () => {
                 const streams = await collect(client.searchStreams(streamId, undefined))
                 return streams.length > 0
             }, 5000, 500)
@@ -210,8 +207,8 @@ describe('end-to-end', () => {
         await dropTestDatabaseIfExists(config.database)
         await createDatabase(config.database)
         Container.set(CONFIG_TOKEN, config)
-        publisher = createClient(PUBLISHER_PRIVATE_KEY, entryPoint.getPeerDescriptor())
-        subscriber = createClient(SUBSCRIBER_PRIVATE_KEY, entryPoint.getPeerDescriptor())
+        publisher = createClient(await fetchPrivateKeyWithGas(), entryPoint.getPeerDescriptor())
+        subscriber = createClient(await fetchPrivateKeyWithGas(), entryPoint.getPeerDescriptor())
         const server = Container.get(APIServer)
         await server.start()
         apiPort = Container.get(APIServer).getPort()
@@ -277,7 +274,7 @@ describe('end-to-end', () => {
         const newStream = await createTestStream(false)
         await startPublisherAndSubscriberForStream(newStream.id, publishingAbortControler.signal)
 
-        await waitForCondition(async () => {
+        await until(async () => {
             const metrics = await queryStreamMetrics(newStream.id, apiPort)
             return (metrics !== undefined) && (metrics.peerCount >= 2)
         }, 20 * 1000, 1000)
