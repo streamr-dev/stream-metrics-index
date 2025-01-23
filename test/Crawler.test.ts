@@ -25,7 +25,7 @@ describe('Crawler', () => {
                     peerDescriptor: n
                 })) ?? []
             }],
-            version: '102.0.0'
+            applicationVersion: '102.0.0'
         }
     }
 
@@ -60,7 +60,7 @@ describe('Crawler', () => {
         const topology = await crawlTopology(
             localNode as any,
             [nodes[0], nodes[5]],
-            (response: NormalizedNodeInfo) => response.streamPartitions[0].contentDeliveryLayerNeighbors.map((n) => n.peerDescriptor!),
+            (response: NormalizedNodeInfo) => response.streamPartitions[0].contentDeliveryLayerNeighbors.map((n) => n.peerDescriptor),
             ''
         )
         expect(localNode.fetchNodeInfo).toHaveBeenCalledTimes(nodes.length)
