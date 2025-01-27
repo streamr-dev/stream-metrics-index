@@ -32,10 +32,10 @@ describe('Topology', () => {
                 ]
             }]
         }] as any)
-        expect([...topology.getNeighbors(toNodeId(nodes[0]), STREAM_PART_ID_1)]).toIncludeSameMembers([
+        expect(topology.getNeighbors(toNodeId(nodes[0]), STREAM_PART_ID_1).map((n) => n.nodeId)).toIncludeSameMembers([
             toNodeId(nodes[2])
         ])
-        expect([...topology.getNeighbors(toNodeId(nodes[2]), STREAM_PART_ID_2)]).toIncludeSameMembers([
+        expect(topology.getNeighbors(toNodeId(nodes[2]), STREAM_PART_ID_2).map((n) => n.nodeId)).toIncludeSameMembers([
             toNodeId(nodes[0]), toNodeId(nodes[2])
         ])
     })

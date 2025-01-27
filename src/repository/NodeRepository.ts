@@ -114,8 +114,8 @@ export class NodeRepository {
                     // A->B and B-A. We don't need to store both associations to the DB. The following comparison
                     // filters out the duplication. Note that if there is only one side of the association 
                     // in the topology, that association is maybe not stored at all.
-                    if (node.id < neighbor) {
-                        neighbors.push([streamPartId, node.id, neighbor])
+                    if (node.id < neighbor.nodeId) {
+                        neighbors.push([streamPartId, node.id, neighbor.nodeId])
                     }
                 }
             }
