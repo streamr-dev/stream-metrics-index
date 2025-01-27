@@ -120,7 +120,7 @@ export class NodeRepository {
                 const streamPartNeighbors = node.streamPartNeighbors.get(streamPartId)
                 for (const neighbor of streamPartNeighbors) {
                     // If node A and B are neighbors, we assume that there are two associations in the topology:
-                    // A->B and B-A. We don't need to store both associations to the DB. The following comparison
+                    // A->B and B->A. We don't need to store both associations to the DB. The following comparison
                     // filters out the duplication. Note that if there is only one side of the association 
                     // in the topology, that association is maybe not stored at all.
                     if (node.id < neighbor.nodeId) {
