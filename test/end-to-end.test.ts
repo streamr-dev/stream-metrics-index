@@ -4,7 +4,7 @@ import { DhtAddress, NodeType, randomDhtAddress, toDhtAddress, toDhtAddressRaw }
 import StreamrClient, { NetworkNodeType, PeerDescriptor, StreamID, StreamPermission, StreamrClientConfig } from '@streamr/sdk'
 import { NetworkNode, createNetworkNode } from '@streamr/trackerless-network'
 import { StreamPartID, collect, setAbortableInterval, toStreamPartID, until } from '@streamr/utils'
-import { fetchPrivateKeyWithGas } from '@streamr/test-utils'
+import { createTestPrivateKey } from '@streamr/test-utils'
 import { sample, uniq, without } from 'lodash'
 import Container from 'typedi'
 import { CONFIG_TOKEN } from '../src/Config'
@@ -207,8 +207,8 @@ describe('end-to-end', () => {
         await dropTestDatabaseIfExists(config.database)
         await createDatabase(config.database)
         Container.set(CONFIG_TOKEN, config)
-        publisher = createClient(await fetchPrivateKeyWithGas(), entryPoint.getPeerDescriptor())
-        subscriber = createClient(await fetchPrivateKeyWithGas(), entryPoint.getPeerDescriptor())
+        publisher = createClient(await createTestPrivateKey({ gas: true }), entryPoint.getPeerDescriptor())
+        subscriber = createClient(await createTestPrivateKey({ gas: true }), entryPoint.getPeerDescriptor())
         const server = Container.get(APIServer)
         await server.start()
         apiPort = Container.get(APIServer).getPort()
