@@ -40,7 +40,7 @@ export class Topology {
         return this.nodes.get(nodeId)?.streamPartNeighbors.get(streamPartId) ?? []
     }
 
-    getPeers(streamPartId: StreamPartID): Set<DhtAddress> {
+    getPeerNodeIds(streamPartId: StreamPartID): Set<DhtAddress> {
         const nodeIds: Set<DhtAddress> = new Set()
         for (const node of this.nodes.values()) {
             const neighbors = node.streamPartNeighbors.get(streamPartId)

@@ -192,7 +192,7 @@ export class Crawler {
         logger.info(`Analyze ${id}`)
         const peersByPartition = new Map<number, Set<DhtAddress>>
         for (const partition of range(getStreamPartitionCount(metadata))) {
-            peersByPartition.set(partition, topology.getPeers(toStreamPartID(id, partition)))
+            peersByPartition.set(partition, topology.getPeerNodeIds(toStreamPartID(id, partition)))
         }
         try {
             const publisherCount = await this.client.getPublisherOrSubscriberCount(id, StreamPermission.PUBLISH)
