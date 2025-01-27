@@ -53,10 +53,10 @@ const createNodeInfoLogOutput = (nodeInfo: NormalizedNodeInfo) => {
             neighbors: nodeInfo.controlLayer.neighbors.map(toNodeId),
             connections: nodeInfo.controlLayer.connections.map(toNodeId)
         },
-        streamPartitions: nodeInfo.streamPartitions.map((sp: any) => ({
+        streamPartitions: nodeInfo.streamPartitions.map((sp) => ({
             id: sp.id,
             controlLayerNeighbors: sp.controlLayerNeighbors.map(toNodeId),
-            contentDeliveryLayerNeighbors: sp.contentDeliveryLayerNeighbors.map((n: any) => toNodeId(n.peerDescriptor))  // TODO better type
+            contentDeliveryLayerNeighbors: sp.contentDeliveryLayerNeighbors.map((n) => ({ nodeId: toNodeId(n.peerDescriptor), rtt: n.rtt })) 
         })),
         applicationVersion: nodeInfo.applicationVersion
     }
@@ -192,7 +192,7 @@ export class Crawler {
         logger.info(`Analyze ${id}`)
         const peersByPartition = new Map<number, Set<DhtAddress>>
         for (const partition of range(getStreamPartitionCount(metadata))) {
-            peersByPartition.set(partition, topology.getPeers(toStreamPartID(id, partition)))
+            peersByPartition.set(partition, topology.getPeerNodeIds(toStreamPartID(id, partition)))
         }
         try {
             const publisherCount = await this.client.getPublisherOrSubscriberCount(id, StreamPermission.PUBLISH)

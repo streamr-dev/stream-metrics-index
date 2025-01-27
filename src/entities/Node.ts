@@ -1,4 +1,4 @@
-import { Field, Float, ObjectType } from 'type-graphql'
+import { Field, Float, Int, ObjectType } from 'type-graphql'
 
 /* eslint-disable indent */
 @ObjectType()
@@ -42,6 +42,8 @@ export class Neighbor {
     nodeId1!: string
     @Field()
     nodeId2!: string
+    @Field(() => Int, { nullable: true })
+    rtt!: number | null
 }
 
 /* eslint-disable indent */

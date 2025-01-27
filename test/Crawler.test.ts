@@ -64,6 +64,6 @@ describe('Crawler', () => {
             ''
         )
         expect(localNode.fetchNodeInfo).toHaveBeenCalledTimes(nodes.length)
-        expect([...topology.getPeers(STREAM_PART_ID)]).toIncludeSameMembers(nodes.map(toNodeId))
+        expect([...topology.getPeerNodeIds(STREAM_PART_ID)]).toIncludeSameMembers(nodes.map(toNodeId))
     })
 })
