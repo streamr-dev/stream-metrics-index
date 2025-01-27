@@ -44,11 +44,12 @@ const storeTestTopology = async (
             streamPartitions: [...streamPartNeighbors.keys()].map((streamPartId) => ({
                 id: streamPartId,
                 contentDeliveryLayerNeighbors: streamPartNeighbors.get(streamPartId).map((n) => ({
-                    peerDescriptor: toMockPeerDescriptor(n)
+                    peerDescriptor: toMockPeerDescriptor(n),
+                    rtt: 123
                 })),
                 controlLayerNeighbors: undefined as any
             })),
-            applicationVersion: 'v102.0.0'
+            applicationVersion: undefined as any
         }
     })
     const topology = new Topology(nodes)
@@ -438,18 +439,21 @@ describe('APIServer', () => {
         })
 
         it('filter by node', async () => {
-            const response1 = await queryAPI(`{
+            const response = await queryAPI(`{
                 neighbors(node: "${node1}") {
                     items {
                         streamPartId
                         nodeId1
                         nodeId2
+                        rtt
                     }
                 }
             }`, apiPort)
-            const neighbors = response1.items
+            const neighbors = response.items
+            expect(neighbors).toHaveLength(1)
             const actualNodes = neighbors.map((n: any) => [n.nodeId1, n.nodeId2]).flat()
             expect(actualNodes).toIncludeSameMembers([node1, node2])
+            expect(neighbors[0].rtt).toBe(123)
         })
 
         it('filter by stream part', async () => {
