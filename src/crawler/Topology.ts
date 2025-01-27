@@ -18,7 +18,7 @@ export class Topology {
 
     private nodes: Map<DhtAddress, Node> = new Map()
 
-    constructor(infos: NormalizedNodeInfo[]) {
+    constructor(infos: Pick<NormalizedNodeInfo, 'peerDescriptor' | 'streamPartitions'>[]) {
         const nodeIds = new Set(...[infos.map((info) => toNodeId(info.peerDescriptor))])
         for (const info of infos) {
             const streamPartNeighbors: Multimap<StreamPartID, Neighbor> = new Multimap()

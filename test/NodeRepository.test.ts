@@ -38,17 +38,19 @@ describe('NodeRepository', () => {
         const peerDescriptors: PeerDescriptor[] = range(2).map(() => ({
             nodeId: toDhtAddressRaw(randomDhtAddress())
         } as any))
-        const nodes: any = [{
+        const nodes = [{
             peerDescriptor: peerDescriptors[0],
             streamPartitions: [{
                 id: STREAM_PART_ID,
-                contentDeliveryLayerNeighbors: [{ peerDescriptor: peerDescriptors[1], rtt: 100 }]
+                contentDeliveryLayerNeighbors: [{ peerDescriptor: peerDescriptors[1], rtt: 100 }],
+                controlLayerNeighbors: undefined as any
             }]
         }, {
             peerDescriptor: peerDescriptors[1],
             streamPartitions: [{
                 id: STREAM_PART_ID,
-                contentDeliveryLayerNeighbors: [{ peerDescriptor: peerDescriptors[0], rtt: 200 }]
+                contentDeliveryLayerNeighbors: [{ peerDescriptor: peerDescriptors[0], rtt: 200 }],
+                controlLayerNeighbors: undefined as any
             }]
         }]
         const topology = new Topology(nodes)

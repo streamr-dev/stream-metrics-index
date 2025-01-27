@@ -19,7 +19,8 @@ describe('Topology', () => {
                 contentDeliveryLayerNeighbors: [
                     { peerDescriptor: nodes[1] },
                     { peerDescriptor: nodes[2] }
-                ]
+                ],
+                controlLayerNeighbors: undefined as any
             }]
         }, {
             peerDescriptor: nodes[2],
@@ -29,9 +30,10 @@ describe('Topology', () => {
                     { peerDescriptor: nodes[0] },
                     { peerDescriptor: nodes[1] },
                     { peerDescriptor: nodes[2] }
-                ]
+                ],
+                controlLayerNeighbors: undefined as any
             }]
-        }] as any)
+        }])
         expect(topology.getNeighbors(toNodeId(nodes[0]), STREAM_PART_ID_1).map((n) => n.nodeId)).toIncludeSameMembers([
             toNodeId(nodes[2])
         ])

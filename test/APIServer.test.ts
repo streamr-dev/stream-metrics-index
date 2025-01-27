@@ -40,7 +40,6 @@ const storeTestTopology = async (
         }
         return {
             peerDescriptor: toMockPeerDescriptor(nodeId),
-            controlLayer: {} as any,
             streamPartitions: [...streamPartNeighbors.keys()].map((streamPartId) => ({
                 id: streamPartId,
                 contentDeliveryLayerNeighbors: streamPartNeighbors.get(streamPartId).map((n) => ({
@@ -48,8 +47,7 @@ const storeTestTopology = async (
                     rtt: 123
                 })),
                 controlLayerNeighbors: undefined as any
-            })),
-            applicationVersion: undefined as any
+            }))
         }
     })
     const topology = new Topology(nodes)
