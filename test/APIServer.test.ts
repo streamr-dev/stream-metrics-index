@@ -1,11 +1,12 @@
 import 'reflect-metadata'
 
-import { randomDhtAddress, DhtAddress } from '@streamr/dht'
-import { Multimap, StreamID, StreamPartID, StreamPartIDUtils, utf8ToBinary } from '@streamr/utils'
+import { DhtAddress, NodeType, randomDhtAddress, toDhtAddressRaw } from '@streamr/dht'
+import { ipv4ToNumber, Multimap, StreamID, StreamPartID, StreamPartIDUtils, utf8ToBinary } from '@streamr/utils'
 import { range, without } from 'lodash'
 import Container from 'typedi'
 import { APIServer } from '../src/api/APIServer'
 import { CONFIG_TOKEN } from '../src/Config'
+import { Topology } from '../src/crawler/Topology'
 import { ContentType } from '../src/entities/Message'
 import { MessageRepository } from '../src/repository/MessageRepository'
 import { NodeRepository } from '../src/repository/NodeRepository'
@@ -13,6 +14,14 @@ import { StreamRepository } from '../src/repository/StreamRepository'
 import { StreamrClientFacade } from '../src/StreamrClientFacade'
 import { createDatabase, queryAPI } from '../src/utils'
 import { dropTestDatabaseIfExists, TEST_DATABASE_NAME } from './utils'
+
+const toMockPeerDescriptor = (nodeId: DhtAddress) => {
+    return { 
+        nodeId: toDhtAddressRaw(nodeId),
+        type: NodeType.NODEJS,
+        ipAddress: ipv4ToNumber('123.1.2.3')
+    }
+}
 
 const storeTestTopology = async (
     streamParts: {
@@ -22,22 +31,27 @@ const storeTestTopology = async (
 ) => {
     const nodeRepository = Container.get(NodeRepository)
     const nodeIds: Set<DhtAddress> = new Set(streamParts.map((sp) => sp.nodeIds).flat())
-    const getNodes = () => {
-        return [...nodeIds].map((nodeId: DhtAddress) => {
-            const streamPartNeighbors = new Multimap()
-            for (const streamPart of streamParts) {
-                if (streamPart.nodeIds.includes(nodeId)) {
-                    streamPartNeighbors.addAll(streamPart.id, without(streamPart.nodeIds, nodeId))
-                }
+    const nodes = [...nodeIds].map((nodeId: DhtAddress) => {
+        const streamPartNeighbors = new Multimap<string, DhtAddress>()
+        for (const streamPart of streamParts) {
+            if (streamPart.nodeIds.includes(nodeId)) {
+                streamPartNeighbors.addAll(streamPart.id, without(streamPart.nodeIds, nodeId))
             }
-            return {
-                id: nodeId,
-                streamPartNeighbors,
-                ipAddress: '123.1.2.3'
-            }
-        })
-    }
-    await nodeRepository.replaceNetworkTopology({ getNodes } as any)
+        }
+        return {
+            peerDescriptor: toMockPeerDescriptor(nodeId),
+            streamPartitions: [...streamPartNeighbors.keys()].map((streamPartId) => ({
+                id: streamPartId,
+                contentDeliveryLayerNeighbors: streamPartNeighbors.get(streamPartId).map((n) => ({
+                    peerDescriptor: toMockPeerDescriptor(n),
+                    rtt: 123
+                })),
+                controlLayerNeighbors: undefined as any
+            }))
+        }
+    })
+    const topology = new Topology(nodes)
+    await nodeRepository.replaceNetworkTopology(topology)
 }
 
 describe('APIServer', () => {
@@ -423,18 +437,21 @@ describe('APIServer', () => {
         })
 
         it('filter by node', async () => {
-            const response1 = await queryAPI(`{
+            const response = await queryAPI(`{
                 neighbors(node: "${node1}") {
                     items {
                         streamPartId
                         nodeId1
                         nodeId2
+                        rtt
                     }
                 }
             }`, apiPort)
-            const neighbors = response1.items
+            const neighbors = response.items
+            expect(neighbors).toHaveLength(1)
             const actualNodes = neighbors.map((n: any) => [n.nodeId1, n.nodeId2]).flat()
             expect(actualNodes).toIncludeSameMembers([node1, node2])
+            expect(neighbors[0].rtt).toBe(123)
         })
 
         it('filter by stream part', async () => {

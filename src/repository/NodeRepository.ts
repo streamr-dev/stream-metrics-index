@@ -2,9 +2,10 @@ import { DhtAddress } from '@streamr/dht'
 import { StreamID, StreamPartID } from '@streamr/sdk'
 import { Logger } from '@streamr/utils'
 import { Inject, Service } from 'typedi'
-import { Topology } from '../crawler/Topology'
+import { Topology, Neighbor } from '../crawler/Topology'
 import { createSqlQuery } from '../utils'
 import { ConnectionPool, PaginatedListFragment } from './ConnectionPool'
+import { mean, without } from 'lodash'
 
 export interface NodeRow {
     id: string
@@ -15,9 +16,17 @@ interface NeighborRow {
     streamPartId: string
     nodeId1: string
     nodeId2: string
+    rtt: number | null
 }
 
 const logger = new Logger(module)
+
+const getRtt = (neighbor1: Neighbor, neighbor2: DhtAddress, streamPartId: StreamPartID, topology: Topology): number | undefined => {
+    const rtt1 = neighbor1.rtt
+    const rtt2 = topology.getNeighbor(neighbor1.nodeId, neighbor2, streamPartId)?.rtt
+    const rtts = without([rtt1, rtt2], undefined)
+    return (rtts.length > 0) ? mean(rtts) : undefined
+}
 
 @Service()
 export class NodeRepository {
@@ -90,7 +99,7 @@ export class NodeRepository {
             params.push(`${streamId}#%`)
         }
         const sql = createSqlQuery(
-            'SELECT streamPartId, nodeId1, nodeId2 FROM neighbors',
+            'SELECT streamPartId, nodeId1, nodeId2, rtt FROM neighbors',
             whereClauses
         )
         return this.connectionPool.queryPaginated<NeighborRow>(
@@ -105,17 +114,18 @@ export class NodeRepository {
         const nodes = topology.getNodes().map((node) => {
             return [node.id, node.ipAddress]
         })
-        const neighbors: [StreamPartID, DhtAddress, DhtAddress][] = []
+        const neighbors: [StreamPartID, DhtAddress, DhtAddress, number?][] = []
         for (const node of topology.getNodes()) {
             for (const streamPartId of node.streamPartNeighbors.keys()) {
                 const streamPartNeighbors = node.streamPartNeighbors.get(streamPartId)
                 for (const neighbor of streamPartNeighbors) {
                     // If node A and B are neighbors, we assume that there are two associations in the topology:
-                    // A->B and B-A. We don't need to store both associations to the DB. The following comparison
+                    // A->B and B->A. We don't need to store both associations to the DB. The following comparison
                     // filters out the duplication. Note that if there is only one side of the association 
                     // in the topology, that association is maybe not stored at all.
-                    if (node.id < neighbor) {
-                        neighbors.push([streamPartId, node.id, neighbor])
+                    if (node.id < neighbor.nodeId) {
+                        const rtt = getRtt(neighbor, node.id, streamPartId, topology)
+                        neighbors.push([streamPartId, node.id, neighbor.nodeId, rtt])
                     }
                 }
             }
@@ -126,7 +136,7 @@ export class NodeRepository {
             await connection.query('DELETE FROM neighbors')
             await connection.query('DELETE FROM nodes')
             await connection.query('INSERT INTO nodes (id, ipAddress) VALUES ?', [nodes])
-            await connection.query('INSERT INTO neighbors (streamPartId, nodeId1, nodeId2) VALUES ?', [neighbors])
+            await connection.query('INSERT INTO neighbors (streamPartId, nodeId1, nodeId2, rtt) VALUES ?', [neighbors])
             await connection.commit()
         } catch (e) {
             connection.rollback()
