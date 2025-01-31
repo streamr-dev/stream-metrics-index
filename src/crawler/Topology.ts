@@ -48,7 +48,7 @@ export class Topology {
     // gets the neighbor if nodeId2 is a neighbor of nodeId1 (but doesn't check the neighborhood other way around)
     getNeighbor(nodeId1: DhtAddress, nodeId2: DhtAddress, streamPartId: StreamPartID): Neighbor | undefined {
         const neighbors = this.nodes.get(nodeId1)?.streamPartNeighbors.get(streamPartId) ?? []
-        return neighbors.find((n) => n.nodeId == nodeId2)
+        return neighbors.find((n) => n.nodeId === nodeId2)
     }
 
     getPeerNodeIds(streamPartId: StreamPartID): Set<DhtAddress> {
