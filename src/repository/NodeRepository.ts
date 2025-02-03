@@ -130,13 +130,18 @@ export class NodeRepository {
                 }
             }
         }
+        logger.info('Replace network topology:', { nodeCount: nodes.length, neighborCount: neighbors.length })
         const connection = await this.connectionPool.getConnection()
         try {
             await connection.beginTransaction()
             await connection.query('DELETE FROM neighbors')
             await connection.query('DELETE FROM nodes')
-            await connection.query('INSERT INTO nodes (id, ipAddress) VALUES ?', [nodes])
-            await connection.query('INSERT INTO neighbors (streamPartId, nodeId1, nodeId2, rtt) VALUES ?', [neighbors])
+            if (nodes.length > 0) {
+                await connection.query('INSERT INTO nodes (id, ipAddress) VALUES ?', [nodes])
+            }
+            if (neighbors.length > 0) {
+                await connection.query('INSERT INTO neighbors (streamPartId, nodeId1, nodeId2, rtt) VALUES ?', [neighbors])
+            }
             await connection.commit()
         } catch (e) {
             connection.rollback()
